@@ -4,6 +4,7 @@
 
 #include "cameo/src/runtime/browser/cameo_content_browser_client.h"
 
+#include "cameo/src/brackets/brackets_extension.h"
 #include "cameo/src/extensions/browser/cameo_extension_host.h"
 #include "cameo/src/runtime/browser/cameo_browser_main_parts.h"
 #include "cameo/src/runtime/browser/geolocation/cameo_access_token_store.h"
@@ -79,7 +80,8 @@ void CameoContentBrowserClient::RenderProcessHostCreated(
   extensions::CameoExtensionHost* extension_host =
       new extensions::CameoExtensionHost;
 
-  // Register the extensions here.
+  extension_host->RegisterExtension(
+      new brackets::BracketsExtension(extension_host));
 
   // FIXME(cmarcelo): CameoExtensionHost shouldn't be a MessageFilter,
   // we want a clearer lifetime, tied to the browser process or the
