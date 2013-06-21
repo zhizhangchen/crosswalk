@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_number_conversions.h"
+#include "cameo/src/brackets/brackets_extension.h"
 #include "cameo/src/extensions/browser/cameo_extension_service.h"
 #include "cameo/src/menu/menu_extension.h"
 #include "cameo/src/runtime/browser/devtools/remote_debugging_server.h"
@@ -59,10 +60,7 @@ void CameoBrowserMainParts::PreMainMessageLoopRun() {
   runtime_registry_.reset(new RuntimeRegistry);
   extension_service_.reset(
       new extensions::CameoExtensionService(runtime_registry_.get()));
-
-  extension_service_->RegisterExtension(
-      new MenuExtension(runtime_registry_.get()));
-
+  RegisterExtensions();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
@@ -97,6 +95,12 @@ bool CameoBrowserMainParts::MainMessageLoopRun(int* result_code) {
 
 void CameoBrowserMainParts::PostMainMessageLoopRun() {
   runtime_context_.reset();
+}
+
+void CameoBrowserMainParts::RegisterExtensions() {
+  extension_service_->RegisterExtension(
+      new MenuExtension(runtime_registry_.get()));
+  extension_service_->RegisterExtension(new brackets::BracketsExtension);
 }
 
 }  // namespace cameo
