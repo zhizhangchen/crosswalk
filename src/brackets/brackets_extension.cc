@@ -128,6 +128,16 @@ static void HandleRename(const base::DictionaryValue* input,
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
+void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  std::string path;
+  input->GetString("path", &path);
+  int mode;
+  input->GetInteger("mode", &mode);
+
+  platform::ErrorCode error = platform::MakeDir(path, mode);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+}
+
 void BracketsExtension::InitializeHandlerMap() {
   handler_map_["ReadFile"] = HandleReadFile;
   handler_map_["GetFileModificationTime"] = HandleGetFileModificationTime;
@@ -136,6 +146,7 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["OpenLiveBrowser"] = HandleOpenLiveBrowser;
   handler_map_["OpenURLInDefaultBrowser"] = HandleOpenURLInDefaultBrowser;
   handler_map_["Rename"] = HandleRename;
+  handler_map_["MakeDir"] = HandleMakeDir;
 }
 
 }  // namespace brackets

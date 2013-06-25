@@ -16,13 +16,13 @@ enum ErrorCode {
   kNoError = 0,
   kUnknownError = 1,
   kInvalidParametersError = 2,
-  // kNotFoundError,
+  kNotFoundError = 3,
   kCannotReadError = 4,
   kUnsupportedEncodingError = 5,
-  // kCannotWriteError = 6,
+  kCannotWriteError = 6,
   // kOutOfSpaceError = 7,
   // kNotFileError = 8,
-  // kNotDirectoryError = 9,
+  kNotDirectoryError = 9,
   // kFileExistsError = 10
 };
 
@@ -33,6 +33,7 @@ ErrorCode WriteFile(const std::string& path, const std::string& encoding, std::s
 ErrorCode OpenLiveBrowser(const std::string& url);
 ErrorCode OpenURLInDefaultBrowser(const std::string& url);
 ErrorCode Rename(const std::string& old_name, const std::string& new_name);
+ErrorCode MakeDir(const std::string& path, int mode);
 
 }  // namespace platform
 }  // namespace brackets
