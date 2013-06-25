@@ -159,3 +159,13 @@ brackets.fs.showOpenDialog = function(allowMultipleSelection, chooseDirectory, t
   });
 };
 
+brackets.fs.makedir = function(path, mode, callback) {
+  var msg = {
+    'cmd': 'MakeDir',
+    'path': path,
+    'mode': mode
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error);
+  });
+};

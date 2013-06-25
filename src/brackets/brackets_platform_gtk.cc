@@ -39,12 +39,27 @@
 namespace brackets {
 namespace platform {
 
+ErrorCode ConvertLinuxErrorCode(int errorCode, bool isReading=true)
+{
+    switch (errorCode) {
+      case ENOENT:
+        return kNotFoundError;
+      case EACCES:
+        return isReading ? kCannotReadError : kCannotWriteError;
+      case ENOTDIR:
+        return kNotDirectoryError;
+      default:
+        return kUnknownError;
+    }
+}
+
 ErrorCode GetFileModificationTime(const std::string& path,
                                   time_t& mtime,
                                   bool& is_dir) {
   struct stat buf;
   if (stat(path.c_str(), &buf) == -1)
-    return kUnknownError;
+    // FIXME(jeez): handle kInvalidParametersError return case.
+    return ConvertLinuxErrorCode(errno);
 
   mtime = buf.st_mtime;
   is_dir = S_ISDIR(buf.st_mode);
@@ -143,6 +158,19 @@ ErrorCode Rename(const std::string& old_name, const std::string& new_name) {
   if (rename(old_name.c_str(), new_name.c_str()) == -1)
     return kUnknownError;
   return kNoError;
+}
+
+ErrorCode MakeDir(const std::string& path, int mode) {
+  ErrorCode mkdirError = kNoError;
+
+  // FIXME(jeez): remove this as soon as Brackets stop passing mode=0,
+  // check brackets/src/file/NativeFileSystem.js, line 838, for more info.
+   mode = mode | 0755;
+
+  if (g_mkdir_with_parents(path.c_str(), mode) == -1)
+    mkdirError = ConvertLinuxErrorCode(errno);
+
+  return mkdirError;
 }
 
 }  // namespace platform
