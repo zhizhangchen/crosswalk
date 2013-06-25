@@ -55,6 +55,7 @@
       ],
       'includes': [
         'src/extensions/extensions.gypi',
+        'src/menu/menu.gypi',
       ],
       'sources': [
         'src/runtime/app/cameo_main_delegate.cc',

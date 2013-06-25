@@ -7,7 +7,7 @@
     {
       'action_name': 'generate_menu_api',
       'inputs': [
-        'generate_api.py',
+        '../extensions/tools/generate_api.py',
         'menu_api.js',
       ],
       'outputs': [

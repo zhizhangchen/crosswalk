@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/strings/string_number_conversions.h"
 #include "cameo/src/extensions/browser/cameo_extension_service.h"
+#include "cameo/src/menu/menu_extension.h"
 #include "cameo/src/runtime/browser/devtools/remote_debugging_server.h"
 #include "cameo/src/runtime/browser/runtime.h"
 #include "cameo/src/runtime/browser/runtime_context.h"
@@ -58,6 +59,10 @@ void CameoBrowserMainParts::PreMainMessageLoopRun() {
   runtime_registry_.reset(new RuntimeRegistry);
   extension_service_.reset(
       new extensions::CameoExtensionService(runtime_registry_.get()));
+
+  extension_service_->RegisterExtension(
+      new MenuExtension(runtime_registry_.get()));
+
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {

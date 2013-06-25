@@ -8,6 +8,9 @@ if (cameo === undefined) {
 }
 
 cameo.menu = (function() {
+  var postMessage = function(json) {
+    cameo.postMessage('cameo.menu', JSON.stringify(json));
+  };
   var menus = []
     , separatorCount = 0;
 
@@ -64,7 +67,7 @@ cameo.menu = (function() {
       }
 
       // Send the batch to Cameo...
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'CreateMenuItems',
         'menu_id': id,
         'items': unrealized_items
@@ -92,7 +95,7 @@ cameo.menu = (function() {
       if (!items.hasOwnProperty(item.id))
         return;
 
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'DelMenuItem',
         'menu_id': id,
         'id': item.id
@@ -108,7 +111,7 @@ cameo.menu = (function() {
         items[item_ids[i]].Delete();
       items = {};
 
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'DelMenu',
         'id': id
       });
@@ -123,7 +126,7 @@ cameo.menu = (function() {
   };
 
   var Toplevel = function(id, label) {
-    cameo.postMessage('cameo.menu', {
+    postMessage({
       'cmd': 'AddMenuToplevel',
       'id': id,
       'label': label
@@ -138,14 +141,14 @@ cameo.menu = (function() {
   };
 
   var Context = function(id) {
-    cameo.postMessage('cameo.menu', {
+    postMessage({
       'cmd': 'AddMenuContext',
       'id': id
     });
 
     var context_menu = new BaseMenu(id);
     context_menu.Popup = function() {
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'PopUpMenu',
         'id': id
       });
@@ -163,7 +166,7 @@ cameo.menu = (function() {
 
     var SetEnabled = function(setting) {
       this.enabled = !!setting;
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'SetMenuItemEnabled',
         'setting': this.enabled,
         'id': this.id
@@ -176,7 +179,7 @@ cameo.menu = (function() {
         return;
       }
       if (this.created) {
-        cameo.postMessage('cameo.menu', {
+        postMessage({
           'cmd': 'DelMenuItem',
           'id': this.id
         });
@@ -199,7 +202,7 @@ cameo.menu = (function() {
 
     item.SetKeyBinding = function(setting) {
       this.key_binding = setting;
-      cameo.postMessage('cameo.menu', {
+      postMessage({
         'cmd': 'SetMenuItemKeyBinding',
         'setting': item.key_binding,
         'id': item.id
@@ -228,7 +231,8 @@ cameo.menu = (function() {
   };
 
   var OnMessageReceived = function(message) {
-    console.log('Message received: ' + JSON.stringify(message));
+    if (cameo.menu.onActivatedMenuItem instanceof Function)
+      cameo.menu.onActivatedMenuItem(message);
   };
 
   cameo.setMessageListener('cameo.menu', OnMessageReceived);

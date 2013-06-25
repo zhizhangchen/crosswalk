@@ -1,0 +1,24 @@
+<script type="application/javascript">
+
+var Toplevel = cameo.menu.Toplevel,
+    Item = cameo.menu.Item,
+    Separator = cameo.menu.Separator;
+
+var file = Toplevel('file-menu', 'File');
+file.AddItem(Item('new', 'New'));
+file.AddItem(Item('open', 'Open'));
+file.AddItem(Item('save', 'Save'));
+file.AddItem(Item('save-as', 'Save As...'));
+file.AddItem(Separator());
+file.AddItem(Item('quit', 'Quit'));
+
+var help = Toplevel('help-menu', 'Help');
+help.AddItem(Item('about', 'About'));
+
+document.write('created file and help menus<br>');
+
+cameo.menu.onActivatedMenuItem = function(item_id) {
+    document.write(item_id + '<br>');
+};
+
+</script>
