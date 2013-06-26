@@ -190,5 +190,11 @@ ErrorCode MoveFileOrDirectoryToTrash(const std::string& path) {
   return success ? kNoError : kUnknownError;
 }
 
+ErrorCode IsNetworkDrive(const std::string& path, bool& is_network_drive) {
+  // FIXME(jeez): Add real implementation.
+  is_network_drive = false;
+  return kNoError;
+}
+
 }  // namespace platform
 }  // namespace brackets

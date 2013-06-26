@@ -128,7 +128,7 @@ static void HandleRename(const base::DictionaryValue* input,
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
   int mode;
@@ -138,7 +138,7 @@ void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* ou
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
@@ -146,12 +146,22 @@ void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base::Dicti
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input, base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
   platform::ErrorCode error = platform::MoveFileOrDirectoryToTrash(path);
   output->SetInteger("error", JSErrorFromPlatformError(error));
+}
+
+static void HandleIsNetworkDrive(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  std::string path;
+  input->GetString("path", &path);
+
+  bool is_network_drive;
+  platform::ErrorCode error = platform::IsNetworkDrive(path, is_network_drive);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+  output->SetBoolean("is_networkDrive", is_network_drive);
 }
 
 void BracketsExtension::InitializeHandlerMap() {
@@ -165,6 +175,7 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["MakeDir"] = HandleMakeDir;
   handler_map_["DeleteFileOrDirectory"] = HandleDeleteFileOrDirectory;
   handler_map_["MoveFileOrDirectoryToTrash"] = HandleMoveFileOrDirectoryToTrash;
+  handler_map_["IsNetworkDrive"] = HandleIsNetworkDrive;
 }
 
 }  // namespace brackets
