@@ -138,6 +138,22 @@ void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* ou
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
+void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  std::string path;
+  input->GetString("path", &path);
+
+  platform::ErrorCode error = platform::DeleteFileOrDirectory(path);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+}
+
+void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  std::string path;
+  input->GetString("path", &path);
+
+  platform::ErrorCode error = platform::MoveFileOrDirectoryToTrash(path);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+}
+
 void BracketsExtension::InitializeHandlerMap() {
   handler_map_["ReadFile"] = HandleReadFile;
   handler_map_["GetFileModificationTime"] = HandleGetFileModificationTime;
@@ -147,6 +163,8 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["OpenURLInDefaultBrowser"] = HandleOpenURLInDefaultBrowser;
   handler_map_["Rename"] = HandleRename;
   handler_map_["MakeDir"] = HandleMakeDir;
+  handler_map_["DeleteFileOrDirectory"] = HandleDeleteFileOrDirectory;
+  handler_map_["MoveFileOrDirectoryToTrash"] = HandleMoveFileOrDirectoryToTrash;
 }
 
 }  // namespace brackets

@@ -169,3 +169,23 @@ brackets.fs.makedir = function(path, mode, callback) {
     callback(r.error);
   });
 };
+
+brackets.fs.unlink = function(path, callback) {
+  var msg = {
+    'cmd': 'DeleteFileOrDirectory',
+    'path': path
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error);
+  });
+};
+
+brackets.fs.moveToTrash = function(path, callback) {
+  var msg = {
+    'cmd': 'MoveFileOrDirectoryToTrash',
+    'path': path
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error);
+  });
+};

@@ -171,5 +171,19 @@ ErrorCode MakeDir(const std::string& path, int mode) {
   return mkdirError;
 }
 
+ErrorCode DeleteFileOrDirectory(const std::string& path) {
+  if(unlink(path.c_str()) == -1) {
+    if (errno == EISDIR && (rmdir(path.c_str()) == 0)) // Then it is a directory.
+      return kNoError;
+    return ConvertLinuxErrorCode(errno);
+  }
+  return kNoError;
+}
+
+ErrorCode MoveFileOrDirectoryToTrash(const std::string& path) {
+  // FIXME(jeez): implement a real "move to trash"
+    return DeleteFileOrDirectory(path);
+}
+
 }  // namespace platform
 }  // namespace brackets
