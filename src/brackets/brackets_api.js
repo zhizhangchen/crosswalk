@@ -149,6 +149,10 @@ brackets.app.getNodeState = function(callback) {
   callback(true, 0);
 };
 
+brackets.app.quit = function() {
+  window.close();
+};
+
 brackets.fs.showOpenDialog = function(allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes, callback) {
   var msg = {
     'cmd': 'ShowOpenDialog',
