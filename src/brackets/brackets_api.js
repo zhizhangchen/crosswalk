@@ -189,3 +189,13 @@ brackets.fs.moveToTrash = function(path, callback) {
     callback(r.error);
   });
 };
+
+brackets.fs.isNetworkDrive = function(path, callback) {
+  var msg = {
+    'cmd': 'IsNetworkDrive',
+    'path': path
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error);
+  });
+};

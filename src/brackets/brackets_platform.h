@@ -37,6 +37,7 @@ ErrorCode Rename(const std::string& old_name, const std::string& new_name);
 ErrorCode MakeDir(const std::string& path, int mode);
 ErrorCode DeleteFileOrDirectory(const std::string& path);
 ErrorCode MoveFileOrDirectoryToTrash(const std::string& path);
+ErrorCode IsNetworkDrive(const std::string& path, bool& is_networkDrive);
 
 }  // namespace platform
 }  // namespace brackets
