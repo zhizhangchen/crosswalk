@@ -12,6 +12,7 @@ namespace brackets {
 namespace platform {
 
 // Need to be in sync with the brackets.fs.* error constants.
+// FIXME(jeez): add a kDirectoryNotEmptyError representing errno ENOTEMPTY.
 enum ErrorCode {
   kNoError = 0,
   kUnknownError = 1,
@@ -34,6 +35,8 @@ ErrorCode OpenLiveBrowser(const std::string& url);
 ErrorCode OpenURLInDefaultBrowser(const std::string& url);
 ErrorCode Rename(const std::string& old_name, const std::string& new_name);
 ErrorCode MakeDir(const std::string& path, int mode);
+ErrorCode DeleteFileOrDirectory(const std::string& path);
+ErrorCode MoveFileOrDirectoryToTrash(const std::string& path);
 
 }  // namespace platform
 }  // namespace brackets

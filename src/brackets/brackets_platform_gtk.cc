@@ -173,5 +173,22 @@ ErrorCode MakeDir(const std::string& path, int mode) {
   return mkdirError;
 }
 
+ErrorCode DeleteFileOrDirectory(const std::string& path) {
+  if (unlink(path.c_str()) == -1) {
+    if (errno == EISDIR && (rmdir(path.c_str()) == 0)) // Then it is a directory.
+      return kNoError;
+    return ConvertLinuxErrorCode(errno);
+  }
+  return kNoError;
+}
+
+ErrorCode MoveFileOrDirectoryToTrash(const std::string& path) {
+  GFile* file = g_file_new_for_path(path.c_str());
+  gboolean success = g_file_trash(file, NULL, NULL);
+
+  g_object_unref(file);
+  return success ? kNoError : kUnknownError;
+}
+
 }  // namespace platform
 }  // namespace brackets
