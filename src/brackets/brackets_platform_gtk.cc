@@ -181,8 +181,11 @@ ErrorCode DeleteFileOrDirectory(const std::string& path) {
 }
 
 ErrorCode MoveFileOrDirectoryToTrash(const std::string& path) {
-  // FIXME(jeez): implement a real "move to trash"
-    return DeleteFileOrDirectory(path);
+  GFile* file = g_file_new_for_path(path.c_str());
+  gboolean success = g_file_trash(file, NULL, NULL);
+
+  g_object_unref(file);
+  return success ? kNoError : kUnknownError;;
 }
 
 }  // namespace platform
