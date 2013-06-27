@@ -21,6 +21,8 @@
 
 var brackets = { app: {}, fs: {} };
 
+brackets.app.NO_ERROR = 0;
+
 brackets.fs.NO_ERROR = 0;
 brackets.fs.ERR_UNKNOWN = 1;
 brackets.fs.ERR_INVALID_PARAMS = 2;
@@ -153,16 +155,6 @@ brackets.app.quit = function() {
   window.close();
 };
 
-brackets.fs.showOpenDialog = function(allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes, callback) {
-  var msg = {
-    'cmd': 'ShowOpenDialog',
-    'initialPath': initialPath
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.files);
-  });
-};
-
 brackets.fs.makedir = function(path, mode, callback) {
   var msg = {
     'cmd': 'MakeDir',
@@ -203,3 +195,33 @@ brackets.fs.isNetworkDrive = function(path, callback) {
     callback(r.error, r.is_networkdrive);
   });
 };
+
+cameo.menu = cameo.menu || {};
+cameo.menu.onActivatedMenuItem = function(item) {
+    brackets.shellAPI.executeCommand(item);
+};
+
+brackets.app.addMenu = function(title, id, position, relativeId, callback) {
+  cameo.menu.addMenu(title, id, position, relativeId);
+  callback(brackets.app.NO_ERROR);
+};
+
+brackets.app.addMenuItem = function(parentId, title, id, key, displayStr, position, relativeId, callback) {
+  cameo.menu.addMenuItem(parentId, title, id, key, displayStr, position, relativeId);
+  callback(brackets.app.NO_ERROR);
+}
+
+brackets.app.setMenuTitle = function(commandid, title, callback) {
+  cameo.menu.setMenuTitle(commandid, title);
+  callback(brackets.app.NO_ERROR);
+}
+
+brackets.app.setMenuItemState = function(commandid, enabled, checked, callback) {
+  cameo.menu.setMenuItemState(commandid, enabled, checked);
+  callback(brackets.app.NO_ERROR);
+}
+
+brackets.app.setMenuItemShortcut = function(commandid, shortcut, displayStr, callback) {
+  cameo.menu.setMenuItemShortcut(commandid, shortcut, displayStr);
+  callback(brackets.app.NO_ERROR);
+}
