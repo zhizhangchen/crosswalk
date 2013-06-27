@@ -57,12 +57,6 @@ MenuContext::MenuContext(
 }
 
 MenuContext::~MenuContext() {
-  WidgetMap::iterator iter;
-  for (iter = menus_.begin(); iter != menus_.end(); ++iter) {
-    // A popup menu has no parent widget.
-    if (!gtk_widget_get_parent(iter->second))
-      gtk_widget_destroy(iter->second);
-  }
   gtk_widget_destroy(menu_);
 }
 
