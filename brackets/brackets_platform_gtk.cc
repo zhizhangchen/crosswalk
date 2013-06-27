@@ -196,5 +196,15 @@ ErrorCode IsNetworkDrive(const std::string& path, bool& is_network_drive) {
   return kNoError;
 }
 
+ErrorCode ShowFolderInOSWindow(const std::string& path) {
+  std::string uri = "file://";
+  uri.append(path);
+
+  if (!gtk_show_uri(NULL, uri.c_str(), GDK_CURRENT_TIME, NULL))
+    return kUnknownError;
+
+  return kNoError;
+}
+
 }  // namespace platform
 }  // namespace brackets

@@ -164,6 +164,14 @@ static void HandleIsNetworkDrive(const base::DictionaryValue* input, base::Dicti
   output->SetBoolean("is_networkDrive", is_network_drive);
 }
 
+static void HandleShowOSFolder(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  std::string path;
+  input->GetString("path", &path);
+
+  platform::ErrorCode error = platform::ShowFolderInOSWindow(path);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+}
+
 void BracketsExtension::InitializeHandlerMap() {
   handler_map_["ReadFile"] = HandleReadFile;
   handler_map_["GetFileModificationTime"] = HandleGetFileModificationTime;
@@ -176,6 +184,7 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["DeleteFileOrDirectory"] = HandleDeleteFileOrDirectory;
   handler_map_["MoveFileOrDirectoryToTrash"] = HandleMoveFileOrDirectoryToTrash;
   handler_map_["IsNetworkDrive"] = HandleIsNetworkDrive;
+  handler_map_["ShowOSFolder"] = HandleShowOSFolder;
 }
 
 }  // namespace brackets

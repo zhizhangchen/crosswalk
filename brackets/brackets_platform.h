@@ -38,6 +38,7 @@ ErrorCode MakeDir(const std::string& path, int mode);
 ErrorCode DeleteFileOrDirectory(const std::string& path);
 ErrorCode MoveFileOrDirectoryToTrash(const std::string& path);
 ErrorCode IsNetworkDrive(const std::string& path, bool& is_network_drive);
+ErrorCode ShowFolderInOSWindow(const std::string& path);
 
 }  // namespace platform
 }  // namespace brackets

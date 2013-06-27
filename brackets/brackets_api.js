@@ -225,3 +225,13 @@ brackets.app.setMenuItemShortcut = function(commandid, shortcut, displayStr, cal
   cameo.menu.setMenuItemShortcut(commandid, shortcut, displayStr);
   callback(brackets.app.NO_ERROR);
 }
+
+brackets.app.showOSFolder = function(path, callback) {
+  var msg = {
+    'cmd': 'ShowOSFolder',
+    'path': path
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error);
+  });
+};
