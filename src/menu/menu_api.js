@@ -1,251 +1,131 @@
+// Copyright (c) 2012 Adobe Systems Incorporated. All rights reserved.
 // Copyright (c) 2013 Intel Corporation. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
+
+// NOTE: This contains an implementation that covers exclusively the Brackets
+// case, and its probably not adequated for other cases. The goal is to iterate
+// on top of this and create a proper Cameo.Menu API for allowing Cameo apps to
+// use native menus.
 
 if (cameo === undefined) {
   console.log('Could not inject menu API to cameo namespace');
   throw 'NoCameoFound';
 }
 
-cameo.menu = (function() {
-  var postMessage = function(json) {
-    cameo.postMessage('cameo.menu', JSON.stringify(json));
-  };
-  var menus = []
-    , separatorCount = 0;
+cameo.menu = cameo.menu || {}
 
-  var BaseMenu = function(id, params) {
-    var items = {}
-      , itemCreateTimeout = undefined;
-
-    if (params !== undefined) {
-      var keys = Object.keys(params);
-      for (var i = 0; i < keys.length; i++)
-        this[keys[i]] = params[keys[i]];
+// We accumulate the messages and posting them only in the next run of the
+// mainloop.
+cameo.menu._postMessage = (function() {
+  var menuWasShown = false;
+  var queue = [];
+  var poster = function() {
+    var i;
+    if (!menuWasShown) {
+      queue.push(JSON.stringify({'cmd': 'Show'}));
+      menuWasShown = true;
     }
-
-    // Menu items are usually very numerous and the API being synchronous,
-    // this leads to a pretty funny effect while the menus are being created.
-    // Thus, creating an item merely creates a wrapper object, and adding
-    // items to a top level menu will actually schedule them to be created
-    // after a certain timeout (currently, 0.1s), in a batch, to reduce the
-    // amount of messages posted to the UI process.
-    var ItemCreateTimeoutFunction = function() {
-      var all_item_ids = Object.keys(items)
-        , unrealized_items = [];
-
-      // Filter out items that were not created already, and create an
-      // easily-serializable object describing each menu item.
-      for (var i = 0; i < all_item_ids.length; i++) {
-        var item = items[all_item_ids[i]];
-
-        if (item.created !== undefined)
-          continue;
-
-        var serialized = {
-          'menu_id': id,
-          'id': item.id
-        };
-        if (item.label !== undefined)
-          serialized.label = item.label;
-        if (item.type !== 'item')
-          serialized.type = item.type;
-        if (item.sub_menu !== undefined)
-          serialized.has_submenu = true;
-        if (item.group !== undefined)
-          serialized.group = item.group;
-
-        unrealized_items.push(serialized);
-        item.created = true;
-      }
-
-      // This function being called whenever items were not actually created
-      // shouldn't actually happen.
-      if (unrealized_items.length === 0) {
-        console.log('Menu: unrealized item length is zero?');
-        return;
-      }
-
-      // Send the batch to Cameo...
-      postMessage({
-        'cmd': 'CreateMenuItems',
-        'menu_id': id,
-        'items': unrealized_items
-      });
-
-      // ...and undefine the timeout.
-      itemCreateTimeout = undefined;
-    };
-
-    var AddItem = function(item) {
-      item.toplevel = this;
-      items[item.id] = item;
-
-      if (itemCreateTimeout !== undefined)
-        itemCreateTimeout = clearTimeout(itemCreateTimeout);
-
-      itemCreateTimeout = setTimeout(ItemCreateTimeoutFunction, 100);
-    };
-
-    var DeleteItem = function(item) {
-      if (item.created === undefined) {
-        delete items[item.id];
-        return;
-      }
-      if (!items.hasOwnProperty(item.id))
-        return;
-
-      postMessage({
-        'cmd': 'DelMenuItem',
-        'menu_id': id,
-        'id': item.id
-      });
-
-      delete items[item.id];
-      delete item;
-    };
-
-    var Delete = function() {
-      var item_ids = Object.keys(items);
-      for (var i = 0; i < item_ids.length; i++)
-        items[item_ids[i]].Delete();
-      items = {};
-
-      postMessage({
-        'cmd': 'DelMenu',
-        'id': id
-      });
-    };
-
-    return {
-      id: id,
-      AddItem: AddItem,
-      DeleteItem: DeleteItem,
-      Delete: Delete
-    };
+    // FIXME(cmarcelo): Change extension to accept a list of messages.
+    for (i = 0; i < queue.length; i++)
+      cameo.postMessage('cameo.menu', queue[i]);
+    queue.length = 0;
   };
-
-  var Toplevel = function(id, label) {
-    postMessage({
-      'cmd': 'AddMenuToplevel',
-      'id': id,
-      'label': label
-    });
-
-    var toplevel = new BaseMenu(id, {
-      label: label
-    });
-
-    menus.push(toplevel);
-    return toplevel;
-  };
-
-  var Context = function(id) {
-    postMessage({
-      'cmd': 'AddMenuContext',
-      'id': id
-    });
-
-    var context_menu = new BaseMenu(id);
-    context_menu.Popup = function() {
-      postMessage({
-        'cmd': 'PopUpMenu',
-        'id': id
-      });
-    };
-
-    menus.push(context_menu);
-    return context_menu;
-  };
-
-  var BaseItem = function(id, options) {
-    options = options || {};
-    var callback = options.callback || function() {};
-    var type = options.type || 'item';
-    var enabled = options.enabled || true;
-
-    var SetEnabled = function(setting) {
-      this.enabled = !!setting;
-      postMessage({
-        'cmd': 'SetMenuItemEnabled',
-        'setting': this.enabled,
-        'id': this.id
-      });
-    };
-
-    var Delete = function() {
-      if (this.toplevel !== undefined) {
-        this.toplevel.DeleteItem(this);
-        return;
-      }
-      if (this.created) {
-        postMessage({
-          'cmd': 'DelMenuItem',
-          'id': this.id
-        });
-      }
-      delete this;
-    };
-
-    return {
-      id: id,
-      callback: callback,
-      type: type,
-      enabled: enabled,
-      SetEnabled: SetEnabled,
-      Delete: Delete
-    };
-  };
-
-  var Item = function(id, label, options) {
-    var item = new BaseItem(id, options);
-
-    item.SetKeyBinding = function(setting) {
-      this.key_binding = setting;
-      postMessage({
-        'cmd': 'SetMenuItemKeyBinding',
-        'setting': item.key_binding,
-        'id': item.id
-      });
-    };
-
-    item.label = label;
-    if (options !== undefined) {
-      item.key_binding = options.key_binding || undefined;
-      item.sub_menu = options.sub_menu || undefined;
-      item.group = options.group || undefined;
-    }
-
-    return item;
-  };
-
-  var GetNewSeparatorId = function() {
-    separatorCount++;
-    return 'separator' + separatorCount;
-  };
-
-  var Separator = function() {
-    return new BaseItem(GetNewSeparatorId(), {
-      'type': 'separator'
-    });
-  };
-
-  var OnMessageReceived = function(message) {
-    if (cameo.menu.onActivatedMenuItem instanceof Function)
-      cameo.menu.onActivatedMenuItem(message);
-  };
-
-  cameo.setMessageListener('cameo.menu', OnMessageReceived);
-
-  return {
-    Separator: Separator,
-    Item: Item,
-    Context: Context,
-    Toplevel: Toplevel,
-    DeleteAllMenus: function() {
-      for (var i = 0; i < menus.length; i++)
-        menus[i].Delete();
-      menus = [];
-    }
+  return function(json) {
+    if (queue.length == 0)
+      setTimeout(poster, 0);
+    queue.push(JSON.stringify(json));
   };
 })();
+
+cameo.setMessageListener('cameo.menu', function(msg) {
+  if (cameo.menu.onActivatedMenuItem instanceof Function)
+    cameo.menu.onActivatedMenuItem(msg);
+});
+
+cameo.menu.setMenuItemState = function(commandid, enabled, checked) {
+  var msg = {
+    'cmd': 'SetMenuItemState',
+    'id': commandid,
+    'enabled': enabled,
+    'checked': checked
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.addMenu = function(title, id, position, relativeId) {
+  var msg = {
+    'cmd': 'AddMenu',
+    'id': id,
+    'title': title,
+    'position': position,
+    'relative_id': relativeId,
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.addMenuItem = function(parentId, title, id, key, displayStr,
+				  position, relativeId) {
+  var msg = {
+    'cmd': 'AddMenuItem',
+    'id': id,
+    'title': title,
+    'key': key,
+    'display_str': displayStr,
+    'parent_id': parentId,
+    'position': position,
+    'relative_id': relativeId,
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.setMenuTitle = function (commandid, title) {
+  var msg = {
+    'cmd': 'SetMenuTitle',
+    'id': commandid,
+    'title': title,
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.setMenuItemShortcut = function(commandId, shortcut, displayStr) {
+  var msg = {
+    'cmd': 'SetMenuItemShortcut',
+    'id': commandId,
+    'shortcut': shortcut,
+    'display_str': displayStr,
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.removeMenu = function(commandId) {
+  var msg = {
+    'cmd': 'RemoveMenu',
+    'id': id,
+  };
+  cameo.menu._postMessage(msg);
+}
+
+cameo.menu.removeMenuItem = function(commandId) {
+  var msg = {
+    'cmd': 'RemoveMenuItem',
+    'id': id,
+  };
+  cameo.menu._postMessage(msg);
+}

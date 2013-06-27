@@ -16,7 +16,7 @@ using content::BrowserThread;
 namespace cameo {
 
 // This will be generated from menu_api.js.
-#include "menu_api.h"
+#include "menu_api.h"  // NOLINT(*)
 
 MenuExtension::MenuExtension(RuntimeRegistry* runtime_registry)
     : CameoExtension("cameo.menu"),
@@ -45,12 +45,12 @@ void MenuExtension::OnRuntimeAdded(Runtime* runtime) {
   native_window_ = runtime->window()->GetNativeWindow();
 }
 
-MenuContext::MenuContext(MenuExtension* menu_extension,
-                         const CameoExtension::PostMessageCallback& post_message)
+MenuContext::MenuContext(
+    MenuExtension* menu_extension,
+    const CameoExtension::PostMessageCallback& post_message)
     : CameoExtension::Context(post_message),
       menu_extension_(menu_extension),
-      menu_(NULL),
-      accel_group_(NULL) {
+      menu_(NULL) {
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&MenuContext::InitializeMenu, base::Unretained(this)));
@@ -64,7 +64,6 @@ MenuContext::~MenuContext() {
       gtk_widget_destroy(iter->second);
   }
   gtk_widget_destroy(menu_);
-  g_object_unref(accel_group_);
 }
 
 void MenuContext::HandleMessage(const std::string& msg) {
@@ -85,24 +84,24 @@ void MenuContext::HandleMessage(const std::string& msg) {
   std::string cmd;
   input->GetString("cmd", &cmd);
 
-  if (cmd == "CreateMenuItems") {
-    HandleCreateMenuItems(input);
-  } else if (cmd == "DelMenuItem") {
-    HandleDelMenuItem(input);
-  } else if (cmd == "AddMenuToplevel") {
-    HandleAddMenuToplevel(input);
-  } else if (cmd == "AddMenuContext") {
-    HandleAddMenuContext(input);
-  } else if (cmd == "SetMenuItemEnabled") {
-    HandleSetMenuItemEnabled(input);
-  } else if (cmd == "SetMenuItemKeyBinding") {
-    HandleSetMenuItemKeyBinding(input);
-  } else if (cmd == "PopUpMenu") {
-    HandlePopUpMenu(input);
-  } else {
+  if (cmd == "AddMenu")
+    HandleAddMenu(input);
+  else if (cmd == "AddMenuItem")
+    HandleAddMenuItem(input);
+  else if (cmd == "SetMenuTitle")
+    HandleSetMenuTitle(input);
+  else if (cmd == "SetMenuItemState")
+    HandleSetMenuItemState(input);
+  else if (cmd == "SetMenuItemShortcut")
+    HandleSetMenuItemShortcut(input);
+  else if (cmd == "RemoveMenu")
+    HandleRemoveMenu(input);
+  else if (cmd == "RemoveMenuItem")
+    HandleRemoveMenuItem(input);
+  else if (cmd == "Show")
+    gtk_widget_show(menu_);
+  else
     VLOG(0) << "Unhandled command " << cmd;
-    return;
-  }
 }
 
 void MenuContext::InitializeMenu() {
@@ -121,91 +120,209 @@ void MenuContext::InitializeMenu() {
   CHECK(vbox);
 
   menu_ = gtk_menu_bar_new();
-  gtk_widget_show(menu_);
   gtk_box_pack_start(GTK_BOX(vbox), menu_, FALSE, TRUE, 0);
   gtk_box_reorder_child(GTK_BOX(vbox), menu_, 0);
 
-  accel_group_ = gtk_accel_group_new();
-  gtk_window_add_accel_group(
-      GTK_WINDOW(menu_extension_->native_window_), accel_group_);
+  // Note: we only show the menu when it's used for the first
+  // time. See the message with command "Show".
 }
 
 #define GET_STRING(INPUT, NAME)                 \
   std::string NAME;                             \
   INPUT->GetString(#NAME, &NAME)
 
-static MenuItemType ConvertMenuItemType(const std::string& item_type) {
-  if (item_type == "separator")
-    return kSeparatorItem;
-  if (item_type == "check")
-    return kCheckItem;
-  if (item_type == "radio")
-    return kRadioItem;
-  return kRegularItem;
+#define GET_BOOLEAN(INPUT, NAME)                \
+  bool NAME;                                    \
+  INPUT->GetBoolean(#NAME, &NAME);
+
+static int FindItemPositionInMenu(GtkMenuShell* shell, GtkWidget* item) {
+  int position = 0;
+  GList* children = gtk_container_get_children(GTK_CONTAINER(shell));
+  for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+    if (iter->data == item)
+      return position;
+    position++;
+  }
+  return -1;
 }
 
-void MenuContext::HandleCreateMenuItems(const base::DictionaryValue* input) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  GET_STRING(input, menu_id);
+static void InsertItemIntoPosition(GtkMenuShell* shell, GtkWidget* item,
+                                   const std::string& position,
+                                   GtkWidget* relative_item) {
+  if (position == "first") {
+    gtk_menu_shell_prepend(shell, item);
+    return;
+  }
 
-  const base::ListValue* items;
-  if (!input->GetList("items", &items))
+  if (position == "before") {
+    int pos = FindItemPositionInMenu(shell, relative_item);
+    if (pos != -1) {
+      gtk_menu_shell_insert(shell, item, pos);
+      return;
+    }
+  } else if (position == "after") {
+    int pos = FindItemPositionInMenu(shell, relative_item);
+    if (pos != -1) {
+      gtk_menu_shell_insert(shell, item, pos + 1);
+      return;
+    }
+  }
+
+  gtk_menu_shell_append(shell, item);
+}
+
+void MenuContext::HandleAddMenu(const base::DictionaryValue* input) {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  GET_STRING(input, id);
+  GET_STRING(input, title);
+  GET_STRING(input, position);
+  GET_STRING(input, relative_id);
+
+  if (menus_.find(id) != menus_.end()) {
+    LOG(WARNING) << "cameo.menu.addMenu(): ignoring duplicate menu with id ='"
+                 << id << "'";
+    return;
+  }
+
+  GtkWidget* relative_item = NULL;
+  if (!relative_id.empty())
+    relative_item = FindMenu(relative_id);
+
+  GtkWidget* item = gtk_menu_item_new_with_label(title.c_str());
+  gtk_widget_set_name(item, id.c_str());
+  InsertItemIntoPosition(GTK_MENU_SHELL(menu_), item, position, relative_item);
+  gtk_widget_show(item);
+
+  GtkWidget* submenu = gtk_menu_new();
+  gtk_widget_show(submenu);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
+
+  menus_[id] = item;
+}
+
+void MenuContext::HandleAddMenuItem(const base::DictionaryValue* input) {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  GET_STRING(input, id);
+  GET_STRING(input, title);
+  GET_STRING(input, parent_id);
+  GET_STRING(input, key);
+  GET_STRING(input, display_str);
+  GET_STRING(input, position);
+  GET_STRING(input, relative_id);
+
+  GtkWidget* menu = FindMenu(parent_id);
+  if (!menu)
     return;
 
-  for (unsigned index = 0; index < items->GetSize(); index++) {
-    const base::DictionaryValue* item;
-    if (!items->GetDictionary(index, &item))
-      continue;
-    GET_STRING(item, id);
-    GET_STRING(item, label);
-    GET_STRING(item, type);
-    GET_STRING(item, group);
+  GtkWidget* item = NULL;
 
-    AddMenuItem(menu_id, id, label, ConvertMenuItemType(type), group);
+  if (title == "---") {
+    item = gtk_separator_menu_item_new();
+  } else {
+    item = gtk_menu_item_new_with_label(title.c_str());
+    g_signal_connect(G_OBJECT(item), "activate",
+                     G_CALLBACK(OnActivateMenuItem), this);
   }
+  gtk_widget_set_name(item, id.c_str());
+  gtk_widget_show(item);
+
+  GtkWidget* relative_item = NULL;
+  if (!relative_id.empty())
+    relative_item = FindMenuItem(relative_id);
+
+  GtkWidget* submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(menu));
+  InsertItemIntoPosition(
+      GTK_MENU_SHELL(submenu), item, position, relative_item);
+
+  menu_items_[id] = item;
 }
 
-void MenuContext::HandleDelMenuItem(const base::DictionaryValue* input) {
+void MenuContext::HandleSetMenuTitle(const base::DictionaryValue* input) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   GET_STRING(input, id);
-  DeleteMenuItem(id);
+  GET_STRING(input, title);
+  GtkWidget* item = FindMenu(id);
+  if (!item)
+    item = FindMenuItem(id);
+  if (!item) {
+    LOG(WARNING) << "cameo.menu.setMenuTitle(): can't find menu with id='"
+                 << id << "'";
+    return;
+  }
+  gtk_menu_item_set_label(GTK_MENU_ITEM(item), title.c_str());
 }
 
-void MenuContext::HandleAddMenuToplevel(const base::DictionaryValue* input) {
+void MenuContext::HandleSetMenuItemState(const base::DictionaryValue* input) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   GET_STRING(input, id);
-  GET_STRING(input, label);
-  CreateToplevelMenu(id, label);
+  GET_BOOLEAN(input, enabled);
+  GET_BOOLEAN(input, checked);
+  GtkWidget* item = FindMenuItem(id);
+  if (!item) {
+    LOG(WARNING)
+        << "cameo.menu.setMenuItemState(): can't find menu item with id='"
+        << id << "'";
+    return;
+  }
+
+  // First time item is mark as checked, we convert it to CheckMenuItem.
+  if (checked && !GTK_IS_CHECK_MENU_ITEM(item))
+    item = ConvertToCheckMenuItem(id, item);
+
+  if (GTK_IS_CHECK_MENU_ITEM(item)) {
+    g_signal_handlers_disconnect_by_data(G_OBJECT(item), this);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), checked);
+    g_signal_connect(G_OBJECT(item), "activate",
+                     G_CALLBACK(OnActivateMenuItem), this);
+  }
+  gtk_widget_set_sensitive(item, enabled);
 }
 
-void MenuContext::HandleAddMenuContext(const base::DictionaryValue* input) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  GET_STRING(input, id);
-  CreatePopupMenu(id);
-}
-
-void MenuContext::HandleSetMenuItemEnabled(const base::DictionaryValue* input) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  GET_STRING(input, id);
-
-  bool setting;
-  input->GetBoolean("setting", &setting);
-
-  SetMenuItemIsEnabled(id, setting);
-}
-
-void MenuContext::HandleSetMenuItemKeyBinding(
+void MenuContext::HandleSetMenuItemShortcut(
     const base::DictionaryValue* input) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   GET_STRING(input, id);
-  GET_STRING(input, setting);
-  SetMenuItemKeyBinding(id, setting);
+  GET_STRING(input, shortcut);
+  GET_STRING(input, display_str);
+  VLOG(0) << "NOT IMPLEMENTED: Set shortcut"
+          << " id='" << id << "'"
+          << " shortcut='" << shortcut << "'"
+          << " display_str='" << display_str << "'";
 }
 
-void MenuContext::HandlePopUpMenu(const base::DictionaryValue* input) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+void MenuContext::HandleRemoveMenu(const base::DictionaryValue* input) {
   GET_STRING(input, id);
-  PopUpMenu(id);
+  GtkWidget* menu = FindMenu(id);
+  if (!menu) {
+    LOG(WARNING) << "cameo.menu.removeMenu(): "
+                 << "can't remove non-existent menu with id ='" << id << "'";
+    return;
+  }
+  gtk_widget_destroy(menu);
+  menus_.erase(id);
+}
+
+void MenuContext::HandleRemoveMenuItem(const base::DictionaryValue* input) {
+  GET_STRING(input, id);
+  GtkWidget* item = FindMenuItem(id);
+  if (!item) {
+    LOG(WARNING) << "cameo.menu.removeMenuItem(): "
+                 << "can't remove non-existent menu item with id ='"
+                 << id << "'";
+    return;
+  }
+  gtk_widget_destroy(item);
+  menu_items_.erase(id);
+}
+
+// static
+void MenuContext::OnActivateMenuItem(GtkMenuItem *menu_item,
+                                     gpointer user_data) {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  MenuContext* context = reinterpret_cast<MenuContext*>(user_data);
+  const char* name = gtk_widget_get_name(GTK_WIDGET(menu_item));
+  if (!name)
+    return;
+  context->PostMessage(name);
 }
 
 GtkWidget* MenuContext::FindMenu(const std::string& id) {
@@ -222,121 +339,32 @@ GtkWidget* MenuContext::FindMenuItem(const std::string& id) {
   return iter->second;
 }
 
-void MenuContext::AddMenuItem(
-    const std::string& menu_id, const std::string& id, const std::string& label,
-    MenuItemType type, const std::string& group) {
-  GtkWidget* menu = FindMenu(menu_id);
-  if (!menu)
-    return;
+GtkWidget* MenuContext::ConvertToCheckMenuItem(const std::string& id,
+                                               GtkWidget* item) {
+  GtkWidget* menu = gtk_widget_get_parent(item);
+  int pos = FindItemPositionInMenu(GTK_MENU_SHELL(menu), item);
 
-  GtkWidget* item = NULL;
-  switch (type) {
-    case kSeparatorItem:
-      item = gtk_separator_menu_item_new();
-      break;
-    case kCheckItem:
-      item = gtk_check_menu_item_new_with_label(label.c_str());
-      break;
-    case kRadioItem: {
-      RadioGroupsMap::iterator iter = radio_groups_.find(group);
-      GSList* group_list = iter != radio_groups_.end() ? iter->second : NULL;
-      item = gtk_radio_menu_item_new_with_label(group_list, label.c_str());
-      radio_groups_[group] = g_slist_prepend(group_list, item);
-      break;
-    }
-    case kRegularItem:
-      item = gtk_menu_item_new_with_label(label.c_str());
-      break;
-  }
+  GtkWidget* new_item = gtk_check_menu_item_new_with_label(
+      gtk_menu_item_get_label(GTK_MENU_ITEM(item)));
+  gtk_widget_set_name(new_item, id.c_str());
+  // FIXME(cmarcelo): Copy accel key to item when we have one.
+  ConnectActivateSignal(new_item);
 
+  gtk_widget_destroy(item);
+  gtk_menu_shell_insert(GTK_MENU_SHELL(menu), new_item, pos);
+  gtk_widget_show(new_item);
+
+  menu_items_[id] = new_item;
+  return new_item;
+}
+
+void MenuContext::ConnectActivateSignal(GtkWidget* item) {
   g_signal_connect(G_OBJECT(item), "activate",
                    G_CALLBACK(OnActivateMenuItem), this);
-  gtk_widget_set_name(item, id.c_str());
-  gtk_widget_show(item);
-
-  GtkWidget* submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(menu));
-  gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-
-  menu_items_[id] = item;
 }
 
-void MenuContext::PopUpMenu(const std::string& id) {
-  GtkWidget* menu = FindMenu(id);
-  if (!menu)
-    return;
-  gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0,
-                 gtk_get_current_event_time());
-}
-
-void MenuContext::DeleteMenu(const std::string& id) {
-  GtkWidget* menu = FindMenu(id);
-  if (!menu)
-    return;
-  gtk_widget_destroy(menu);
-  menus_.erase(id);
-}
-
-void MenuContext::DeleteMenuItem(const std::string& id) {
-  GtkWidget* item = FindMenuItem(id);
-  if (!item)
-    return;
-  gtk_widget_destroy(item);
-}
-
-void MenuContext::SetMenuItemIsEnabled(const std::string& id, bool setting) {
-  GtkWidget* item = FindMenuItem(id);
-  if (!item)
-    return;
-  gtk_widget_set_sensitive(item, setting);
-}
-
-void MenuContext::SetMenuItemKeyBinding(
-    const std::string& id, const std::string& setting) {
-  guint key;
-  GdkModifierType mods;
-  // GTK's accelerator format seems good enough to be used for platform-agnostic
-  // implementation. See gtk_accelerator_parse() documentation for examples,
-  // which includes "<Control>a" and "<Shift><Alt>F1".
-  gtk_accelerator_parse(setting.c_str(), &key, &mods);
-  if (key == 0 && mods == 0)
-    return;
-
-  GtkWidget* item = FindMenuItem(id);
-  if (!item)
-    return;
-
-  gtk_widget_add_accelerator(item, "selected", accel_group_, key,
-                             mods, GTK_ACCEL_VISIBLE);
-}
-
-void MenuContext::CreateToplevelMenu(const std::string& id,
-                                     const std::string& label) {
-  GtkWidget* item = gtk_menu_item_new_with_label(label.c_str());
-  gtk_widget_set_name(item, id.c_str());
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), item);
-  gtk_widget_show(item);
-
-  GtkWidget* submenu = gtk_menu_new();
-  gtk_widget_show(submenu);
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
-
-  menus_[id] = item;
-}
-
-void MenuContext::CreatePopupMenu(const std::string& id) {
-  GtkWidget* menu = gtk_menu_new();
-  menus_[id] = menu;
-}
-
-// static
-void MenuContext::OnActivateMenuItem(GtkMenuItem *menu_item,
-                                     gpointer user_data) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  MenuContext* context = reinterpret_cast<MenuContext*>(user_data);
-  const char* name = gtk_widget_get_name(GTK_WIDGET(menu_item));
-  if (!name)
-    return;
-  context->PostMessage(name);
+void MenuContext::DisconnectActivateSignal(GtkWidget* item) {
+  g_signal_handlers_disconnect_by_data(G_OBJECT(item), this);
 }
 
 }  // namespace cameo

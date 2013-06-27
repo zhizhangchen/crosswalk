@@ -25,13 +25,6 @@ namespace cameo {
 
 class MenuContext;
 
-enum MenuItemType {
-  kRegularItem,
-  kRadioItem,
-  kCheckItem,
-  kSeparatorItem
-};
-
 class MenuExtension : public CameoExtension,
                       public RuntimeRegistryObserver {
  public:
@@ -40,7 +33,8 @@ class MenuExtension : public CameoExtension,
 
   // CameoExtension implementation.
   virtual const char* GetJavaScriptAPI() OVERRIDE;
-  virtual Context* CreateContext(const PostMessageCallback& post_message) OVERRIDE;
+  virtual Context* CreateContext(
+      const PostMessageCallback& post_message) OVERRIDE;
 
   // RuntimeRegistryObserver implementation.
   virtual void OnRuntimeAdded(Runtime* runtime) OVERRIDE;
@@ -69,40 +63,28 @@ class MenuContext : public CameoExtension::Context {
 
   void InitializeMenu();
 
-  GtkWidget* FindMenu(const std::string& id);
-  GtkWidget* FindMenuItem(const std::string& id);
-
-  void AddMenuItem(const std::string& menu_id, const std::string& id,
-                   const std::string& label, MenuItemType type,
-                   const std::string& group);
-  void PopUpMenu(const std::string& id);
-  void DeleteMenu(const std::string& id);
-  void DeleteMenuItem(const std::string& id);
-  void SetMenuItemIsEnabled(const std::string& id, bool setting);
-  void SetMenuItemKeyBinding(const std::string& id, const std::string& setting);
-  void CreateToplevelMenu(const std::string& id, const std::string& label);
-  void CreatePopupMenu(const std::string& id);
-
-  void HandleCreateMenuItems(const base::DictionaryValue* input);
-  void HandleDelMenuItem(const base::DictionaryValue* input);
-  void HandleAddMenuToplevel(const base::DictionaryValue* input);
-  void HandleAddMenuContext(const base::DictionaryValue* input);
-  void HandleSetMenuItemEnabled(const base::DictionaryValue* input);
-  void HandleSetMenuItemKeyBinding(const base::DictionaryValue* input);
-  void HandlePopUpMenu(const base::DictionaryValue* input);
+  void HandleAddMenu(const base::DictionaryValue* input);
+  void HandleAddMenuItem(const base::DictionaryValue* input);
+  void HandleSetMenuTitle(const base::DictionaryValue* input);
+  void HandleSetMenuItemState(const base::DictionaryValue* input);
+  void HandleSetMenuItemShortcut(const base::DictionaryValue* input);
+  void HandleRemoveMenu(const base::DictionaryValue* input);
+  void HandleRemoveMenuItem(const base::DictionaryValue* input);
 
   static void OnActivateMenuItem(GtkMenuItem*, gpointer);
 
+  GtkWidget* FindMenu(const std::string& id);
+  GtkWidget* FindMenuItem(const std::string& id);
+  GtkWidget* ConvertToCheckMenuItem(const std::string& id, GtkWidget* item);
+  void ConnectActivateSignal(GtkWidget* item);
+  void DisconnectActivateSignal(GtkWidget* item);
+
   MenuExtension* menu_extension_;
   GtkWidget* menu_;
-  GtkAccelGroup* accel_group_;
 
   typedef std::map<std::string, GtkWidget*> WidgetMap;
   WidgetMap menus_;
   WidgetMap menu_items_;
-
-  typedef std::map<std::string, GSList*> RadioGroupsMap;
-  RadioGroupsMap radio_groups_;
 };
 
 }  // namespace cameo
