@@ -59,6 +59,15 @@ brackets._postMessage = (function() {
   };
 })();
 
+// PROPERTIES
+Object.defineProperty(brackets.app, "language", {
+  writeable: false,
+  get : function() { return (navigator.language).toLowerCase(); },
+  enumerable : true,
+  configurable : false
+});
+
+// API
 brackets.fs.readFile = function(path, encoding, callback) {
   var msg = {
     'cmd': 'ReadFile',
