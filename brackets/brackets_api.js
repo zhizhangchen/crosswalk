@@ -235,3 +235,7 @@ brackets.app.showOSFolder = function(path, callback) {
     callback(r.error);
   });
 };
+
+brackets.app.showExtensionsFolder = function(appURL, callback) {
+  return brackets.app.showOSFolder(brackets.app.getApplicationSupportDirectory() + '/extensions', callback);
+};
