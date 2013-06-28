@@ -172,6 +172,17 @@ static void HandleShowOSFolder(const base::DictionaryValue* input, base::Diction
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
+static void HandleGetPendingFilesToOpen(const base::DictionaryValue* input,
+                          base::DictionaryValue* output) {
+  std::vector<std::string> result;
+  platform::ErrorCode error = platform::GetPendingFilesToOpen(result);
+
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+  base::ListValue* l = new base::ListValue;
+  l->AppendStrings(result);
+  output->Set("files", l);
+}
+
 void BracketsExtension::InitializeHandlerMap() {
   handler_map_["ReadFile"] = HandleReadFile;
   handler_map_["GetFileModificationTime"] = HandleGetFileModificationTime;
@@ -185,6 +196,7 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["MoveFileOrDirectoryToTrash"] = HandleMoveFileOrDirectoryToTrash;
   handler_map_["IsNetworkDrive"] = HandleIsNetworkDrive;
   handler_map_["ShowOSFolder"] = HandleShowOSFolder;
+  handler_map_["GetPendingFilesToOpen"] = HandleGetPendingFilesToOpen;
 }
 
 }  // namespace brackets

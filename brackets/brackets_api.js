@@ -248,3 +248,12 @@ brackets.app.showOSFolder = function(path, callback) {
 brackets.app.showExtensionsFolder = function(appURL, callback) {
   return brackets.app.showOSFolder(brackets.app.getApplicationSupportDirectory() + '/extensions', callback);
 };
+
+brackets.app.getPendingFilesToOpen = function(callback) {
+  var msg = {
+    'cmd': 'GetPendingFilesToOpen'
+  };
+  brackets._postMessage(msg, function(r) {
+    callback(r.error, r.files);
+  });
+};

@@ -22,6 +22,7 @@
 
 #include "cameo/brackets/brackets_platform.h"
 
+#include "base/command_line.h"
 #include <gtk/gtk.h>
 #include <cerrno>
 #include <cstdio>
@@ -202,6 +203,17 @@ ErrorCode ShowFolderInOSWindow(const std::string& path) {
 
   if (!gtk_show_uri(NULL, uri.c_str(), GDK_CURRENT_TIME, NULL))
     return kUnknownError;
+
+  return kNoError;
+}
+
+ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents) {
+  std::vector<std::string> stringVector = CommandLine::ForCurrentProcess()->argv();
+
+  for (size_t i = 1; i < stringVector.size(); ++i) {
+    if (stringVector[i][0] != '-')
+      directory_contents.push_back(stringVector[i]);
+  }
 
   return kNoError;
 }

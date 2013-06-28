@@ -39,6 +39,7 @@ ErrorCode DeleteFileOrDirectory(const std::string& path);
 ErrorCode MoveFileOrDirectoryToTrash(const std::string& path);
 ErrorCode IsNetworkDrive(const std::string& path, bool& is_network_drive);
 ErrorCode ShowFolderInOSWindow(const std::string& path);
+ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents);
 
 }  // namespace platform
 }  // namespace brackets
