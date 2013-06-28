@@ -35,112 +35,6 @@ brackets.fs.ERR_NOT_FILE = 8;
 brackets.fs.ERR_NOT_DIRECTORY = 9;
 brackets.fs.ERR_FILE_EXISTS = 10;
 
-brackets._postMessage = (function() {
-  brackets._callbacks = {};
-  brackets._next_reply_id = 0;
-  cameo.setMessageListener('brackets', function(json) {
-    var msg = JSON.parse(json);
-    var reply_id = msg._reply_id;
-    var callback = brackets._callbacks[reply_id];
-    if (callback) {
-      delete msg._reply_id;
-      delete brackets._callbacks[reply_id];
-      callback(msg);
-    } else {
-      console.log('Invalid reply_id received from Brackets extension: ' + reply_id);
-    }
-  });
-  return function(msg, callback) {
-    var reply_id = brackets._next_reply_id;
-    brackets._next_reply_id += 1;
-    brackets._callbacks[reply_id] = callback;
-    msg._reply_id = reply_id.toString();
-    cameo.postMessage('brackets', JSON.stringify(msg));
-  };
-})();
-
-brackets.fs.readFile = function(path, encoding, callback) {
-  var msg = {
-    'cmd': 'ReadFile',
-    'path': path,
-    'encoding': encoding
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.data);
-  });
-};
-
-brackets.fs.stat = function(path, callback) {
-  var msg = {
-    'cmd': 'GetFileModificationTime',
-    'path': path
-  };
-  brackets._postMessage(msg, function (r) {
-    callback(r.error, {
-      isFile: function () {
-        return !r.is_dir;
-      },
-      isDirectory: function () {
-        return r.is_dir;
-      },
-      mtime: new Date(r.modtime * 1000)
-    });
-  });
-};
-
-brackets.fs.readdir = function(path, callback) {
-  var msg = {
-    'cmd': 'ReadDir',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.files)
-  });
-};
-
-brackets.fs.writeFile = function(path, data, encoding, callback) {
-  var msg = {
-    'cmd': 'WriteFile',
-    'path': path,
-    'data': data,
-    'encoding': encoding
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.app.openLiveBrowser = function(url, enableRemoteDebugging, callback) {
-  var msg = {
-    'cmd': 'OpenLiveBrowser',
-    'url': url
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.app.openURLInDefaultBrowser = function(callback, url) {
-  var msg = {
-    'cmd': 'OpenURLInDefaultBrowser',
-    'url': url
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.rename = function(oldPath, newPath, callback) {
-  var msg = {
-    'cmd': 'Rename',
-    'oldPath': oldPath,
-    'newPath': newPath
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
 brackets.app.getApplicationSupportDirectory = function() {
   // FIXME(cmarcelo): Synchronous function. We need to store this
   // value when initializing the plugin.
@@ -153,47 +47,6 @@ brackets.app.getNodeState = function(callback) {
 
 brackets.app.quit = function() {
   window.close();
-};
-
-brackets.fs.makedir = function(path, mode, callback) {
-  var msg = {
-    'cmd': 'MakeDir',
-    'path': path,
-    'mode': mode
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.unlink = function(path, callback) {
-  var msg = {
-    'cmd': 'DeleteFileOrDirectory',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.moveToTrash = function(path, callback) {
-  var msg = {
-    'cmd': 'MoveFileOrDirectoryToTrash',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.isNetworkDrive = function(path, callback) {
-  var msg = {
-    'cmd': 'IsNetworkDrive',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
 };
 
 cameo.menu = cameo.menu || {};
@@ -225,3 +78,35 @@ brackets.app.setMenuItemShortcut = function(commandid, shortcut, displayStr, cal
   cameo.menu.setMenuItemShortcut(commandid, shortcut, displayStr);
   callback(brackets.app.NO_ERROR);
 }
+
+// Each API entry contains the command to the native implementation and the
+// arguments of the API. For a callback argument of the API, normally an array
+// can be used to specify the response data names that the callback function is
+// interested in.  Or it can be a customized function, with response message
+// and user secified callback as its arguments
+cameo.registerApiGroup(brackets.fs, "brackets", {
+  readFile: ["ReadFile", "path", "encoding", ["error", "data"]],
+  stat: ["GetFileModificationTime", "path", function(r, callback) {
+    callback(r.error, {
+      isFile: function () {
+        return !r.is_dir;
+      },
+      isDirectory: function () {
+        return r.is_dir;
+      },
+      mtime: new Date(r.modtime * 1000)
+    });
+  }],
+  readdir: ["ReadDir", "path", ["error", "files"]],
+  writeFile: ["WriteFile", "path", "data", "encoding", ["error"]],
+  rename: ["Rename", "oldPath", "newPath", ["error"]],
+  makedir: ["MakeDir", "path", "mode", ["error"]],
+  unlink: ["DeleteFileOrDirectory", "path", ["error"]],
+  moveToTrash: ["MoveFileOrDirectoryToTrash", "path", ["error"]],
+  isNetworkDrive: ["IsNetworkDrive", "path", ["error"]],
+});
+
+cameo.registerApiGroup(brackets.app, "brackets", {
+  openLiveBrowser: ["OpenLiveBrowser", "url", "enableRemoteDebugging", ["error"]],
+  openURLInDefaultBrowser: ["OpenURLInDefaultBrowser", ["error"], "url"]
+});
