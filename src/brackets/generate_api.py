@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath("../../../v8/tools/js2c.py"))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../v8/tools")))
 
 import js2c
 
