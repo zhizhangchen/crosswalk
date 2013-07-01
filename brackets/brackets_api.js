@@ -35,6 +35,8 @@ brackets.fs.ERR_NOT_FILE = 8;
 brackets.fs.ERR_NOT_DIRECTORY = 9;
 brackets.fs.ERR_FILE_EXISTS = 10;
 
+brackets.debugging_port = 0;
+
 brackets._postMessage = (function() {
   brackets._callbacks = {};
   brackets._next_reply_id = 0;
@@ -65,6 +67,14 @@ Object.defineProperty(brackets.app, "language", {
   get : function() { return (navigator.language).toLowerCase(); },
   enumerable : true,
   configurable : false
+});
+
+// SETUP MESSAGES
+var msg = {
+  'cmd': 'GetRemoteDebuggingPort'
+};
+brackets._postMessage(msg, function(r) {
+  brackets.debugging_port = r.debugging_port;
 });
 
 // API
@@ -256,4 +266,8 @@ brackets.app.getPendingFilesToOpen = function(callback) {
   brackets._postMessage(msg, function(r) {
     callback(r.error, r.files);
   });
+};
+
+brackets.app.getRemoteDebuggingPort = function() {
+  return brackets.debugging_port;
 };

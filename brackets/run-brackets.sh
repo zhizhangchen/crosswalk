@@ -11,4 +11,4 @@ fi
 BRACKETS_PATH="$1"
 CAMEO_EXECUTABLE=../../out/Release/cameo
 
-$CAMEO_EXECUTABLE --disable-web-security --allow-file-access-from-files $BRACKETS_PATH/src/index.html
+$CAMEO_EXECUTABLE --remote-debugging-port=9234 --disable-web-security --allow-file-access-from-files $BRACKETS_PATH/src/index.html

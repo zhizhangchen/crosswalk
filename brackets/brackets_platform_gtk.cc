@@ -23,6 +23,8 @@
 #include "cameo/brackets/brackets_platform.h"
 
 #include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
+#include "content/public/common/content_switches.h"
 #include <gtk/gtk.h>
 #include <cerrno>
 #include <cstdio>
@@ -216,6 +218,18 @@ ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents) {
   }
 
   return kNoError;
+}
+
+ErrorCode GetRemoteDebuggingPort(int& port) {
+  CommandLine* cmdLine = CommandLine::ForCurrentProcess();
+  port = 0;
+
+  if (cmdLine->HasSwitch(switches::kRemoteDebuggingPort)) {
+    const std::string portStr = cmdLine->GetSwitchValueASCII(switches::kRemoteDebuggingPort);
+    base::StringToInt(portStr, &port);
+  }
+
+  return port ? kNoError : kUnknownError;
 }
 
 }  // namespace platform

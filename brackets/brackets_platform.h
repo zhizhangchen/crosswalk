@@ -40,6 +40,7 @@ ErrorCode MoveFileOrDirectoryToTrash(const std::string& path);
 ErrorCode IsNetworkDrive(const std::string& path, bool& is_network_drive);
 ErrorCode ShowFolderInOSWindow(const std::string& path);
 ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents);
+ErrorCode GetRemoteDebuggingPort(int& port);
 
 }  // namespace platform
 }  // namespace brackets

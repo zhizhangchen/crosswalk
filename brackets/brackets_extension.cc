@@ -183,6 +183,13 @@ static void HandleGetPendingFilesToOpen(const base::DictionaryValue* input,
   output->Set("files", l);
 }
 
+static void HandleGetRemoteDebuggingPort(const base::DictionaryValue* input, base::DictionaryValue* output) {
+  int port;
+  platform::ErrorCode error = platform::GetRemoteDebuggingPort(port);
+  output->SetInteger("error", JSErrorFromPlatformError(error));
+  output->SetInteger("debugging_port", port);
+}
+
 void BracketsExtension::InitializeHandlerMap() {
   handler_map_["ReadFile"] = HandleReadFile;
   handler_map_["GetFileModificationTime"] = HandleGetFileModificationTime;
@@ -197,6 +204,7 @@ void BracketsExtension::InitializeHandlerMap() {
   handler_map_["IsNetworkDrive"] = HandleIsNetworkDrive;
   handler_map_["ShowOSFolder"] = HandleShowOSFolder;
   handler_map_["GetPendingFilesToOpen"] = HandleGetPendingFilesToOpen;
+  handler_map_["GetRemoteDebuggingPort"] = HandleGetRemoteDebuggingPort;
 }
 
 }  // namespace brackets
