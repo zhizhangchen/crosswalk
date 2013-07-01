@@ -7,7 +7,7 @@
 
 #include <map>
 #include "base/compiler_specific.h"
-#include "cameo/src/extensions/browser/cameo_extension.h"
+#include "cameo/extensions/browser/cameo_extension.h"
 
 using cameo::extensions::CameoExtension;
 

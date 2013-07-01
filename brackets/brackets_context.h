@@ -7,9 +7,9 @@
 
 #include <string>
 #include "base/compiler_specific.h"
-#include "cameo/src/brackets/brackets_extension.h"
-#include "cameo/src/brackets/brackets_platform.h"
-#include "cameo/src/extensions/browser/cameo_extension.h"
+#include "cameo/brackets/brackets_extension.h"
+#include "cameo/brackets/brackets_platform.h"
+#include "cameo/extensions/browser/cameo_extension.h"
 
 using cameo::extensions::CameoExtension;
 

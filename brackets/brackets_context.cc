@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "cameo/src/brackets/brackets_context.h"
+#include "cameo/brackets/brackets_context.h"
 
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
 #include "base/values.h"
-#include "cameo/src/brackets/brackets_platform.h"
+#include "cameo/brackets/brackets_platform.h"
 
 namespace brackets {
 

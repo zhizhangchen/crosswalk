@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "cameo/src/brackets/brackets_extension.h"
+#include "cameo/brackets/brackets_extension.h"
 
 #include "base/values.h"
-#include "cameo/src/brackets/brackets_context.h"
+#include "cameo/brackets/brackets_context.h"
 
 namespace brackets {
 

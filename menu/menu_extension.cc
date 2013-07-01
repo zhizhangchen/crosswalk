@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "cameo/src/menu/menu_extension.h"
+#include "cameo/menu/menu_extension.h"
 
 #include "base/bind.h"
 #include "base/json/json_reader.h"

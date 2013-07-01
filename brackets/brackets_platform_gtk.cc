@@ -20,7 +20,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "cameo/src/brackets/brackets_platform.h"
+#include "cameo/brackets/brackets_platform.h"
 
 #include <gtk/gtk.h>
 #include <cerrno>

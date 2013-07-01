@@ -10,9 +10,9 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "cameo/src/extensions/browser/cameo_extension.h"
-#include "cameo/src/runtime/browser/runtime.h"
-#include "cameo/src/runtime/browser/runtime_registry.h"
+#include "cameo/extensions/browser/cameo_extension.h"
+#include "cameo/runtime/browser/runtime.h"
+#include "cameo/runtime/browser/runtime_registry.h"
 #include "ui/gfx/native_widget_types.h"
 
 namespace base {
