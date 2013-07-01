@@ -1,0 +1,49 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <script>
+      function assert(result, message) {
+        console.assert(result, message);
+      }
+      function test() {
+        var origFileName = "brackets-extension-test";
+        var origFile = "/tmp/" + origFileName;
+        var testFileName = origFileName + ".txt";
+        var testFile = "/tmp/" + testFileName;
+        brackets.fs.writeFile(origFile, "hello", "utf8",function (error){
+          console.assert(error === 0, "writeFile");
+        })
+        brackets.fs.readFile(origFile, "utf8",  function (err, content) {
+          console.assert(content === "hello", "Check " + origFile + " content");
+        });
+        brackets.fs.rename(origFile, testFile ,function (error) {
+          console.assert(error === 0, "rename");
+        })
+        brackets.fs.stat(testFile, function (err, stat) {
+          console.assert(stat.isFile(), "Check isFile");
+          console.assert(!stat.isDirectory(), "Check isDirectory");
+          console.assert(stat.mtime, "Check mtime");
+        });
+        brackets.fs.readFile(testFile, "utf8",  function (err, content) {
+          console.assert(content === "hello", "Check ", testFile + " content");
+        });
+        brackets.fs.readdir("/tmp", function (err, files) {
+          console.assert(files.indexOf(testFileName) !== -1, "check readdir");
+        })
+        brackets.fs.showOpenDialog(false, false, "hello", "/tmp", "*",function (error, files) {
+          console.assert(error === 0, "showOpenDialog");
+        });
+        brackets.app.openLiveBrowser("http://google.com", true, function (error) {
+          console.assert(error === 0, "openLiveBrowser");
+        });
+        
+        brackets.app.openURLInDefaultBrowser(function (error) {
+          console.assert(error === 0, "openURLInDefaultBrowser");
+        }, "http://baidu.com");
+        console.assert(brackets.app.getApplicationSupportDirectory() === "/tmp/brackets-support", "getApplicationSupportDirectory");
+      }
+    </script>
+    <a href="javascript:test()"> Test <a>
+  </body>
+</html>
