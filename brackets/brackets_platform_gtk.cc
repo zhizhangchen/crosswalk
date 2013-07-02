@@ -217,6 +217,10 @@ ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents) {
       directory_contents.push_back(stringVector[i]);
   }
 
+  // Remove the first element since it currently points to Brackets index file.
+  if (!directory_contents.empty())
+    directory_contents.erase(directory_contents.begin());
+
   return kNoError;
 }
 

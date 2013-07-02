@@ -4,11 +4,11 @@ cd "$(dirname "$0")"
 
 if [ ! -d "$1" ]; then
     echo "Run Brackets using Cameo"
-    echo "Usage: $0 <brackets-path>"
+    echo "Usage: $0 <brackets-path> [files-to-open...]"
     exit 1
 fi
 
 BRACKETS_PATH="$1"
 CAMEO_EXECUTABLE=../../out/Release/cameo
 
-$CAMEO_EXECUTABLE --remote-debugging-port=9234 --disable-web-security --allow-file-access-from-files $BRACKETS_PATH/src/index.html
+$CAMEO_EXECUTABLE --remote-debugging-port=9234 --disable-web-security --allow-file-access-from-files $BRACKETS_PATH/src/index.html "${@:2}"
