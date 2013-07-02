@@ -42,6 +42,7 @@ class CameoBrowserMainParts : public content::BrowserMainParts {
 
  private:
   void RegisterExtensions();
+  void RegisterExternalExtensions();
 
   scoped_ptr<RuntimeContext> runtime_context_;
 

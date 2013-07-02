@@ -8,9 +8,11 @@
 
 #include "base/bind.h"
 #include "base/command_line.h"
+#include "base/file_util.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_number_conversions.h"
 #include "cameo/brackets/brackets_extension.h"
+#include "cameo/extensions/browser/cameo_extension_external.h"
 #include "cameo/extensions/browser/cameo_extension_service.h"
 #include "cameo/menu/menu_extension.h"
 #include "cameo/runtime/browser/devtools/remote_debugging_server.h"
@@ -23,6 +25,8 @@
 #include "net/base/net_util.h"
 
 namespace cameo {
+
+using extensions::CameoExternalExtension;
 
 CameoBrowserMainParts::CameoBrowserMainParts(
     const content::MainFunctionParams& parameters)
@@ -55,12 +59,42 @@ void CameoBrowserMainParts::PostMainMessageLoopStart() {
 void CameoBrowserMainParts::PreEarlyInitialization() {
 }
 
+void CameoBrowserMainParts::RegisterExternalExtensions() {
+  if (!startup_url_.SchemeIsFile()) {
+    VLOG(0) << "Unsupported scheme for external extensions: " <<
+          startup_url_.scheme();
+    return;
+  }
+
+  base::FilePath where(startup_url_.path());
+  where.Append("extensions");
+  // FIXME(leandro): Use GetNativeLibraryName() to obtain the proper
+  // extension for the current platform.
+  const base::FilePath::StringType pattern = FILE_PATH_LITERAL("*.so");
+  file_util::FileEnumerator libraries(where, false,
+        file_util::FileEnumerator::FILES, pattern);
+
+  for (base::FilePath extension_path = libraries.Next();
+        !extension_path.empty(); extension_path = libraries.Next()) {
+    CameoExternalExtension* extension =
+          new CameoExternalExtension(extension_path);
+
+    if (extension->is_valid()) {
+      extension_service_->RegisterExtension(extension);
+    } else {
+      delete extension;
+    }
+  }
+}
+
 void CameoBrowserMainParts::PreMainMessageLoopRun() {
   runtime_context_.reset(new RuntimeContext);
   runtime_registry_.reset(new RuntimeRegistry);
   extension_service_.reset(
       new extensions::CameoExtensionService(runtime_registry_.get()));
   RegisterExtensions();
+
+  RegisterExternalExtensions();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
