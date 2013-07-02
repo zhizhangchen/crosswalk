@@ -12,7 +12,8 @@ namespace brackets {
 // This will be generated from brackets_api.js.
 #include "brackets_api.h"
 
-BracketsExtension::BracketsExtension() : CameoExtension("brackets") {
+BracketsExtension::BracketsExtension() : CameoExtension() {
+  set_name("brackets");
   InitializeHandlerMap();
 }
 

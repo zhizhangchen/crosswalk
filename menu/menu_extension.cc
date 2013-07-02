@@ -19,9 +19,10 @@ namespace cameo {
 #include "menu_api.h"  // NOLINT(*)
 
 MenuExtension::MenuExtension(RuntimeRegistry* runtime_registry)
-    : CameoExtension("cameo.menu"),
+    : CameoExtension(),
       runtime_registry_(runtime_registry),
       native_window_(NULL) {
+  set_name("cameo.menu");
   runtime_registry_->AddObserver(this);
 }
 
