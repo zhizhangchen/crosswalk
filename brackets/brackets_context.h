@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CAMEO_SRC_BRACKETS_BRACKETS_CONTEXT_H_
-#define CAMEO_SRC_BRACKETS_BRACKETS_CONTEXT_H_
+#ifndef CAMEO_BRACKETS_BRACKETS_CONTEXT_H_
+#define CAMEO_BRACKETS_BRACKETS_CONTEXT_H_
 
 #include <string>
 #include "base/compiler_specific.h"
@@ -31,4 +31,4 @@ class BracketsContext : public CameoExtension::Context {
 
 }  // namespace brackets
 
-#endif  // CAMEO_SRC_BRACKETS_BRACKETS_CONTEXT_H_
+#endif  // CAMEO_BRACKETS_BRACKETS_CONTEXT_H_

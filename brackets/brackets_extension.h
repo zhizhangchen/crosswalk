@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CAMEO_SRC_BRACKETS_BRACKETS_EXTENSION_H_
-#define CAMEO_SRC_BRACKETS_BRACKETS_EXTENSION_H_
+#ifndef CAMEO_BRACKETS_BRACKETS_EXTENSION_H_
+#define CAMEO_BRACKETS_BRACKETS_EXTENSION_H_
 
 #include <map>
+#include <string>
 #include "base/compiler_specific.h"
 #include "cameo/extensions/browser/cameo_extension.h"
 
@@ -39,4 +40,4 @@ class BracketsExtension : public CameoExtension {
 
 }  // namespace brackets
 
-#endif  // CAMEO_SRC_BRACKETS_BRACKETS_EXTENSION_H_
+#endif  // CAMEO_BRACKETS_BRACKETS_EXTENSION_H_

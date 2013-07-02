@@ -22,38 +22,37 @@
 
 #include "cameo/brackets/brackets_platform.h"
 
-#include "base/command_line.h"
-#include "base/strings/string_number_conversions.h"
-#include "content/public/common/content_switches.h"
+#include <dirent.h>
 #include <gtk/gtk.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dirent.h>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <vector>
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
+#include "content/public/common/content_switches.h"
 
 namespace brackets {
 namespace platform {
 
-ErrorCode ConvertLinuxErrorCode(int errorCode, bool isReading=true)
-{
-    switch (errorCode) {
-      case ENOENT:
-        return kNotFoundError;
-      case EACCES:
-        return isReading ? kCannotReadError : kCannotWriteError;
-      case ENOTDIR:
-        return kNotDirectoryError;
-      default:
-        return kUnknownError;
-    }
+ErrorCode ConvertLinuxErrorCode(int errorCode, bool isReading = true) {
+  switch (errorCode) {
+    case ENOENT:
+      return kNotFoundError;
+    case EACCES:
+      return isReading ? kCannotReadError : kCannotWriteError;
+    case ENOTDIR:
+      return kNotDirectoryError;
+    default:
+      return kUnknownError;
+  }
 }
 
 ErrorCode GetFileModificationTime(const std::string& path,
@@ -77,7 +76,7 @@ ErrorCode ReadDir(const std::string& path,
 
   std::vector<std::string> files;
   while (struct dirent* dir_entry = readdir(dir)) {
-    if (!strcmp(dir_entry->d_name, ".") || !strcmp(dir_entry->d_name,".."))
+    if (!strcmp(dir_entry->d_name, ".") || !strcmp(dir_entry->d_name, ".."))
       continue;
     if (dir_entry->d_type == DT_DIR)
       directoryContents.push_back(dir_entry->d_name);
@@ -97,7 +96,7 @@ ErrorCode ReadFile(const std::string& filename,
     return kUnsupportedEncodingError;
 
   struct stat buf;
-  if (stat(filename.c_str(),&buf) == -1)
+  if (stat(filename.c_str(), &buf) == -1)
     return kUnknownError;
 
   if (!S_ISREG(buf.st_mode))
@@ -135,7 +134,7 @@ ErrorCode WriteFile(const std::string& path,
 }
 
 ErrorCode OpenLiveBrowser(const std::string& url) {
-  pid_t pid = vfork(); // So we can share 'error', replace with fork() call.
+  pid_t pid = vfork();  // So we can share 'error', replace with fork() call.
   short int error = 0;
   if (pid == 0) {
     execlp("google-chrome", "--allow-file-access-from-files", url.c_str(), "--remote-debugging-port=9222", NULL);
@@ -144,7 +143,8 @@ ErrorCode OpenLiveBrowser(const std::string& url) {
   }
 
   if (error) {
-    std::cout << "Error when trying to launch live browser: " << strerror(error) << "\n";
+    std::cout << "Error when trying to launch live browser: "
+              << strerror(error) << "\n";
     return kUnknownError;
   }
 
@@ -168,7 +168,7 @@ ErrorCode MakeDir(const std::string& path, int mode) {
 
   // FIXME(jeez): remove this as soon as Brackets stop passing mode=0,
   // check brackets/src/file/NativeFileSystem.js, line 838, for more info.
-   mode = mode | 0755;
+  mode = mode | 0755;
 
   if (g_mkdir_with_parents(path.c_str(), mode) == -1)
     mkdirError = ConvertLinuxErrorCode(errno);
@@ -178,7 +178,7 @@ ErrorCode MakeDir(const std::string& path, int mode) {
 
 ErrorCode DeleteFileOrDirectory(const std::string& path) {
   if (unlink(path.c_str()) == -1) {
-    if (errno == EISDIR && (rmdir(path.c_str()) == 0)) // Then it is a directory.
+    if (errno == EISDIR && (rmdir(path.c_str()) == 0))  // It is a directory.
       return kNoError;
     return ConvertLinuxErrorCode(errno);
   }
@@ -210,7 +210,8 @@ ErrorCode ShowFolderInOSWindow(const std::string& path) {
 }
 
 ErrorCode GetPendingFilesToOpen(std::vector<std::string>& directory_contents) {
-  std::vector<std::string> stringVector = CommandLine::ForCurrentProcess()->argv();
+  std::vector<std::string> stringVector =
+      CommandLine::ForCurrentProcess()->argv();
 
   for (size_t i = 1; i < stringVector.size(); ++i) {
     if (stringVector[i][0] != '-')
@@ -229,7 +230,8 @@ ErrorCode GetRemoteDebuggingPort(int& port) {
   port = 0;
 
   if (cmdLine->HasSwitch(switches::kRemoteDebuggingPort)) {
-    const std::string portStr = cmdLine->GetSwitchValueASCII(switches::kRemoteDebuggingPort);
+    const std::string portStr =
+        cmdLine->GetSwitchValueASCII(switches::kRemoteDebuggingPort);
     base::StringToInt(portStr, &port);
   }
 

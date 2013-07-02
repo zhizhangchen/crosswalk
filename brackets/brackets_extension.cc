@@ -4,13 +4,15 @@
 
 #include "cameo/brackets/brackets_extension.h"
 
+#include <string>
+#include <vector>
 #include "base/values.h"
 #include "cameo/brackets/brackets_context.h"
 
 namespace brackets {
 
 // This will be generated from brackets_api.js.
-#include "brackets_api.h"
+#include "brackets_api.h"  // NOLINT(*)
 
 BracketsExtension::BracketsExtension() : CameoExtension() {
   set_name("brackets");
@@ -129,7 +131,8 @@ static void HandleRename(const base::DictionaryValue* input,
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-static void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleMakeDir(const base::DictionaryValue* input,
+                          base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
   int mode;
@@ -139,7 +142,8 @@ static void HandleMakeDir(const base::DictionaryValue* input, base::DictionaryVa
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-static void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleDeleteFileOrDirectory(const base::DictionaryValue* input,
+                                        base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
@@ -147,7 +151,8 @@ static void HandleDeleteFileOrDirectory(const base::DictionaryValue* input, base
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-static void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input,
+                                             base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
@@ -155,7 +160,8 @@ static void HandleMoveFileOrDirectoryToTrash(const base::DictionaryValue* input,
   output->SetInteger("error", JSErrorFromPlatformError(error));
 }
 
-static void HandleIsNetworkDrive(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleIsNetworkDrive(const base::DictionaryValue* input,
+                                 base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
@@ -165,7 +171,8 @@ static void HandleIsNetworkDrive(const base::DictionaryValue* input, base::Dicti
   output->SetBoolean("is_networkDrive", is_network_drive);
 }
 
-static void HandleShowOSFolder(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleShowOSFolder(const base::DictionaryValue* input,
+                               base::DictionaryValue* output) {
   std::string path;
   input->GetString("path", &path);
 
@@ -174,7 +181,7 @@ static void HandleShowOSFolder(const base::DictionaryValue* input, base::Diction
 }
 
 static void HandleGetPendingFilesToOpen(const base::DictionaryValue* input,
-                          base::DictionaryValue* output) {
+                                        base::DictionaryValue* output) {
   std::vector<std::string> result;
   platform::ErrorCode error = platform::GetPendingFilesToOpen(result);
 
@@ -184,7 +191,8 @@ static void HandleGetPendingFilesToOpen(const base::DictionaryValue* input,
   output->Set("files", l);
 }
 
-static void HandleGetRemoteDebuggingPort(const base::DictionaryValue* input, base::DictionaryValue* output) {
+static void HandleGetRemoteDebuggingPort(const base::DictionaryValue* input,
+                                         base::DictionaryValue* output) {
   int port;
   platform::ErrorCode error = platform::GetRemoteDebuggingPort(port);
   output->SetInteger("error", JSErrorFromPlatformError(error));

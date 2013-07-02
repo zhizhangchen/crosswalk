@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CAMEO_SRC_MENU_MENU_EXTENSION_H_
-#define CAMEO_SRC_MENU_MENU_EXTENSION_H_
+#ifndef CAMEO_MENU_MENU_EXTENSION_H_
+#define CAMEO_MENU_MENU_EXTENSION_H_
 
 #include <gtk/gtk.h>
 #include <map>
@@ -89,4 +89,4 @@ class MenuContext : public CameoExtension::Context {
 
 }  // namespace cameo
 
-#endif  // CAMEO_SRC_MENU_MENU_EXTENSION_H_
+#endif  // CAMEO_MENU_MENU_EXTENSION_H_
