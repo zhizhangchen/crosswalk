@@ -37,13 +37,27 @@ brackets.fs.ERR_FILE_EXISTS = 10;
 
 brackets.debugging_port = 0;
 
-brackets._postMessage = (function() {
+/* Create an API function for a native command.
+ *
+ * The first argument should be the command name, followed by argument
+ * specifications of the API, which are normally argument names of the API,
+ * except for a callback arugument, in which case an array or a customized
+ * function can be used. The array should specifify the argument names of the
+ * callback. The customzied function takes the response message and user
+ * secified callback as its arguments. It can do some job using the reponse
+ * message and then call the user specified callback. All the argument names
+ * should match the message fields sent to or received from the extension.
+ *
+*/
+
+brackets._createCommand = (function() {
   brackets._callbacks = {};
   brackets._next_reply_id = 0;
   cameo.setMessageListener('brackets', function(json) {
     var msg = JSON.parse(json);
     var reply_id = msg._reply_id;
     var callback = brackets._callbacks[reply_id];
+    //console.log('Received message:' + json);
     if (callback) {
       delete msg._reply_id;
       delete brackets._callbacks[reply_id];
@@ -52,12 +66,62 @@ brackets._postMessage = (function() {
       console.log('Invalid reply_id received from Brackets extension: ' + reply_id);
     }
   });
-  return function(msg, callback) {
-    var reply_id = brackets._next_reply_id;
-    brackets._next_reply_id += 1;
-    brackets._callbacks[reply_id] = callback;
-    msg._reply_id = reply_id.toString();
-    cameo.postMessage('brackets', JSON.stringify(msg));
+  return function() {
+    var apiSpec = arguments;
+    var cmdNameType =  typeof apiSpec[0];
+    var callbackCount = 0;
+    if (cmdNameType !== "string") {
+      console.error('Command name should be string, but is ' + cmdNameType);
+      return function () {};
+    }
+    for (var j = 1; j < apiSpec.length; j ++) {
+      var argNameType =  typeof apiSpec[j];
+      if (argNameType !== "string" &&
+          !(apiSpec[j] instanceof Array) && argNameType !== "function") {
+        console.error('The ' + j + ' argument name of ' + apiSpec[0]
+            + ' should be string, array or function, but is ' + argNameType);
+        return function () {};
+      }
+      if (apiSpec[j] instanceof Array || argNameType === "function")
+        callbackCount ++;
+
+    }
+    if (callbackCount > 1) {
+        console.error("Too many callback specs for command " + apiSpec[0]);
+        return function () {};
+    }
+    return function () {
+      var callback;
+      var cbFields=[];
+      var msg = { cmd: apiSpec[0] };
+      var i;
+      for (i = 0; i < arguments.length; i ++) {
+        var arg = arguments[i];
+        if (typeof arg === 'function') {
+          callback = arg;
+          cbFields = apiSpec[i + 1];
+        }
+        else {
+          msg[apiSpec[i + 1]] = arg;
+        }
+      }
+      var reply_id = brackets._next_reply_id;
+      brackets._next_reply_id += 1;
+      brackets._callbacks[reply_id] = function(r) {
+        var cbArgs = [];
+        if  (typeof cbFields === 'function')
+          cbFields.call(null, r, callback);
+        else {
+          for (i = 0; i < cbFields.length; i ++) {
+            cbArgs.push(r[cbFields[i]]);
+          }
+          callback.apply(null, cbArgs);
+        }
+      };
+      msg._reply_id = reply_id.toString();
+      //console.log('Sending message:'+ JSON.stringify(msg));
+      cameo.postMessage('brackets', JSON.stringify(msg));
+    }
   };
 })();
 
@@ -70,96 +134,11 @@ Object.defineProperty(brackets.app, "language", {
 });
 
 // SETUP MESSAGES
-var msg = {
-  'cmd': 'GetRemoteDebuggingPort'
-};
-brackets._postMessage(msg, function(r) {
-  brackets.debugging_port = r.debugging_port;
+brackets._createCommand("GetRemoteDebuggingPort",["debugging_port"])(function (debugging_port) {
+  brackets.debugging_port = debugging_port;
 });
 
 // API
-brackets.fs.readFile = function(path, encoding, callback) {
-  var msg = {
-    'cmd': 'ReadFile',
-    'path': path,
-    'encoding': encoding
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.data);
-  });
-};
-
-brackets.fs.stat = function(path, callback) {
-  var msg = {
-    'cmd': 'GetFileModificationTime',
-    'path': path
-  };
-  brackets._postMessage(msg, function (r) {
-    callback(r.error, {
-      isFile: function () {
-        return !r.is_dir;
-      },
-      isDirectory: function () {
-        return r.is_dir;
-      },
-      mtime: new Date(r.modtime * 1000)
-    });
-  });
-};
-
-brackets.fs.readdir = function(path, callback) {
-  var msg = {
-    'cmd': 'ReadDir',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.files)
-  });
-};
-
-brackets.fs.writeFile = function(path, data, encoding, callback) {
-  var msg = {
-    'cmd': 'WriteFile',
-    'path': path,
-    'data': data,
-    'encoding': encoding
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.app.openLiveBrowser = function(url, enableRemoteDebugging, callback) {
-  var msg = {
-    'cmd': 'OpenLiveBrowser',
-    'url': url
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.app.openURLInDefaultBrowser = function(callback, url) {
-  var msg = {
-    'cmd': 'OpenURLInDefaultBrowser',
-    'url': url
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.rename = function(oldPath, newPath, callback) {
-  var msg = {
-    'cmd': 'Rename',
-    'oldPath': oldPath,
-    'newPath': newPath
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
 brackets.app.getApplicationSupportDirectory = function() {
   // FIXME(cmarcelo): Synchronous function. We need to store this
   // value when initializing the plugin.
@@ -172,47 +151,6 @@ brackets.app.getNodeState = function(callback) {
 
 brackets.app.quit = function() {
   window.close();
-};
-
-brackets.fs.makedir = function(path, mode, callback) {
-  var msg = {
-    'cmd': 'MakeDir',
-    'path': path,
-    'mode': mode
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.unlink = function(path, callback) {
-  var msg = {
-    'cmd': 'DeleteFileOrDirectory',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.moveToTrash = function(path, callback) {
-  var msg = {
-    'cmd': 'MoveFileOrDirectoryToTrash',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
-brackets.fs.isNetworkDrive = function(path, callback) {
-  var msg = {
-    'cmd': 'IsNetworkDrive',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.is_networkdrive);
-  });
 };
 
 cameo.menu = cameo.menu || {};
@@ -245,29 +183,34 @@ brackets.app.setMenuItemShortcut = function(commandid, shortcut, displayStr, cal
   callback(brackets.app.NO_ERROR);
 }
 
-brackets.app.showOSFolder = function(path, callback) {
-  var msg = {
-    'cmd': 'ShowOSFolder',
-    'path': path
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error);
-  });
-};
-
 brackets.app.showExtensionsFolder = function(appURL, callback) {
   return brackets.app.showOSFolder(brackets.app.getApplicationSupportDirectory() + '/extensions', callback);
-};
-
-brackets.app.getPendingFilesToOpen = function(callback) {
-  var msg = {
-    'cmd': 'GetPendingFilesToOpen'
-  };
-  brackets._postMessage(msg, function(r) {
-    callback(r.error, r.files);
-  });
 };
 
 brackets.app.getRemoteDebuggingPort = function() {
   return brackets.debugging_port;
 };
+
+brackets.fs.readFile = brackets._createCommand("ReadFile", "path", "encoding", ["error", "data"]);
+brackets.fs.stat = brackets._createCommand("GetFileModificationTime", "path", function(r, callback) {
+  callback(r.error, {
+    isFile: function () {
+      return !r.is_dir;
+    },
+    isDirectory: function () {
+      return r.is_dir;
+    },
+    mtime: new Date(r.modtime * 1000)
+  });
+});
+brackets.fs.readdir = brackets._createCommand("ReadDir", "path", ["error", "files"]);
+brackets.fs.writeFile = brackets._createCommand("WriteFile", "path", "data", "encoding", ["error"]);
+brackets.fs.rename = brackets._createCommand("Rename", "oldPath", "newPath", ["error"]);
+brackets.fs.makedir = brackets._createCommand("MakeDir", "path", "mode", ["error"]);
+brackets.fs.unlink = brackets._createCommand("DeleteFileOrDirectory", "path", ["error"]);
+brackets.fs.moveToTrash = brackets._createCommand("MoveFileOrDirectoryToTrash", "path", ["error"]);
+brackets.fs.isNetworkDrive = brackets._createCommand("IsNetworkDrive", "path", ["error"]);
+brackets.app.openLiveBrowser = brackets._createCommand("OpenLiveBrowser", "url", "enableRemoteDebugging", ["error"]);
+brackets.app.openURLInDefaultBrowser = brackets._createCommand("OpenURLInDefaultBrowser", ["error"], "url");
+brackets.app.showOSFolder = brackets._createCommand("ShowOSFolder", "path", ["error"]);
+brackets.app.getPendingFilesToOpen = brackets._createCommand("GetPendingFilesToOpen", ["error", "files"]);
