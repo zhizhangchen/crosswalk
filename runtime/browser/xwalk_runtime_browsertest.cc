@@ -14,8 +14,8 @@
 #include "cameo/runtime/browser/runtime.h"
 #include "cameo/runtime/browser/runtime_registry.h"
 #include "cameo/runtime/common/cameo_notification_types.h"
-#include "cameo/test/base/cameo_test_utils.h"
 #include "cameo/test/base/in_process_browser_test.h"
+#include "cameo/test/base/xwalk_test_utils.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
@@ -99,10 +99,10 @@ class FullscreenNotificationObserver
   DISALLOW_COPY_AND_ASSIGN(FullscreenNotificationObserver);
 };
 
-class CameoRuntimeTest : public InProcessBrowserTest {
+class XWalkRuntimeTest : public InProcessBrowserTest {
  public:
-  CameoRuntimeTest() {}
-  virtual ~CameoRuntimeTest() {
+  XWalkRuntimeTest() {}
+  virtual ~XWalkRuntimeTest() {
     original_runtimes_.clear();
     notification_observer_.reset();
   }
@@ -148,7 +148,7 @@ class CameoRuntimeTest : public InProcessBrowserTest {
 
 // FIXME(hmin): Since currently the browser process is not shared by multiple
 // app launch, this test is disabled to avoid floody launches.
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, DISABLED_SecondLaunch) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, DISABLED_SecondLaunch) {
   MockRuntimeRegistryObserver observer;
   RuntimeRegistry::Get()->AddObserver(&observer);
   Relaunch(GetCommandLineForRelaunch());
@@ -161,7 +161,7 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, DISABLED_SecondLaunch) {
   RuntimeRegistry::Get()->RemoveObserver(&observer);
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, CreateAndCloseRuntime) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, CreateAndCloseRuntime) {
   MockRuntimeRegistryObserver observer;
   RuntimeRegistry::Get()->AddObserver(&observer);
   // At least one Runtime instance is created at startup.
@@ -186,7 +186,7 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, CreateAndCloseRuntime) {
   RuntimeRegistry::Get()->RemoveObserver(&observer);
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, LoadURLAndClose) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, LoadURLAndClose) {
   GURL url(test_server()->GetURL("test.html"));
   size_t len = RuntimeRegistry::Get()->runtimes().size();
   runtime()->LoadURL(url);
@@ -197,7 +197,7 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, LoadURLAndClose) {
   EXPECT_EQ(len - 1, RuntimeRegistry::Get()->runtimes().size());
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, CloseNativeWindow) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, CloseNativeWindow) {
   GURL url(test_server()->GetURL("test.html"));
   Runtime* new_runtime = Runtime::Create(runtime()->runtime_context(), url);
   size_t len = RuntimeRegistry::Get()->runtimes().size();
@@ -207,7 +207,7 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, CloseNativeWindow) {
   EXPECT_EQ(len - 1, RuntimeRegistry::Get()->runtimes().size());
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, LaunchWithFullscreenWindow) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, LaunchWithFullscreenWindow) {
   MockRuntimeRegistryObserver observer;
   RuntimeRegistry::Get()->AddObserver(&observer);
   // At least one Runtime instance is created at startup.
@@ -239,11 +239,11 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, LaunchWithFullscreenWindow) {
   RuntimeRegistry::Get()->RemoveObserver(&observer);
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, HTML5FullscreenAPI) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, HTML5FullscreenAPI) {
   size_t len = RuntimeRegistry::Get()->runtimes().size();
-  GURL url = cameo_test_utils::GetTestURL(
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(), base::FilePath().AppendASCII("fullscreen.html"));
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   EXPECT_TRUE(false == runtime()->window()->IsFullscreen());
 
   FullscreenNotificationObserver enter_observer;
@@ -267,12 +267,12 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, HTML5FullscreenAPI) {
   EXPECT_TRUE(false == runtime()->window()->IsFullscreen());
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, GetWindowTitle) {
-  GURL url = cameo_test_utils::GetTestURL(
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, GetWindowTitle) {
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(), base::FilePath().AppendASCII("title.html"));
   string16 title = ASCIIToUTF16("Dummy Title");
   content::TitleWatcher title_watcher(runtime()->web_contents(), title);
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   EXPECT_EQ(title, title_watcher.WaitAndGetTitle());
 
   NativeAppWindow* window = runtime()->window();
@@ -288,11 +288,11 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, GetWindowTitle) {
 #endif  // defined(TOOLKIT_GTK)
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, OpenLinkInNewRuntime) {
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, OpenLinkInNewRuntime) {
   size_t len = RuntimeRegistry::Get()->runtimes().size();
-  GURL url = cameo_test_utils::GetTestURL(
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(), base::FilePath().AppendASCII("new_target.html"));
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   runtime()->web_contents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
       string16(),
       ASCIIToUTF16("doClick();"));
@@ -305,36 +305,36 @@ IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, OpenLinkInNewRuntime) {
   EXPECT_EQ(len + 1, RuntimeRegistry::Get()->runtimes().size());
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, FaviconTest_ICO) {
-  base::FilePath icon_file(cameo_test_utils::GetTestFilePath(
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, FaviconTest_ICO) {
+  base::FilePath icon_file(xwalk_test_utils::GetTestFilePath(
       base::FilePath(FILE_PATH_LITERAL("favicon")),
       base::FilePath(FILE_PATH_LITERAL("16x16.ico"))));
 
   FaviconChangedObserver observer(icon_file);
   RuntimeRegistry::Get()->AddObserver(&observer);
 
-  GURL url = cameo_test_utils::GetTestURL(
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(FILE_PATH_LITERAL("favicon")),
       base::FilePath().AppendASCII("favicon_ico.html"));
 
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   content::RunMessageLoop();
   RuntimeRegistry::Get()->RemoveObserver(&observer);
 }
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, FaviconTest_PNG) {
-  base::FilePath icon_file(cameo_test_utils::GetTestFilePath(
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, FaviconTest_PNG) {
+  base::FilePath icon_file(xwalk_test_utils::GetTestFilePath(
       base::FilePath(FILE_PATH_LITERAL("favicon")),
       base::FilePath(FILE_PATH_LITERAL("48x48.png"))));
 
   FaviconChangedObserver observer(icon_file);
   RuntimeRegistry::Get()->AddObserver(&observer);
 
-  GURL url = cameo_test_utils::GetTestURL(
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(FILE_PATH_LITERAL("favicon")),
       base::FilePath().AppendASCII("favicon_png.html"));
 
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   content::RunMessageLoop();
   RuntimeRegistry::Get()->RemoveObserver(&observer);
 }

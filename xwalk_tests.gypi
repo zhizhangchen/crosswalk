@@ -1,7 +1,7 @@
 {
   'targets': [
   {
-    'target_name': 'cameo_test_common',
+    'target_name': 'xwalk_test_common',
     'type': 'static_library',
     'dependencies': [
       'cameo_runtime',
@@ -24,10 +24,10 @@
       '..',
     ],
     'sources': [
-      'test/base/cameo_test_suite.cc',
-      'test/base/cameo_test_suite.h',
-      'test/base/cameo_test_utils.cc',
-      'test/base/cameo_test_utils.h',
+      'test/base/xwalk_test_suite.cc',
+      'test/base/xwalk_test_suite.h',
+      'test/base/xwalk_test_utils.cc',
+      'test/base/xwalk_test_utils.h',
     ],
     'conditions': [
       ['toolkit_uses_gtk == 1', {
@@ -47,20 +47,20 @@
         ],
       }],
     ],
-  },  # cameo_test_common target
+  },  # xwalk_test_common target
 
   {
-    'target_name': 'cameo_unittest',
+    'target_name': 'xwalk_unittest',
     'type': 'executable',
     'dependencies': [
-      'cameo_test_common',
+      'xwalk_test_common',
       '../testing/gtest.gyp:gtest',
     ],
     'include_dirs' : [
       '..',
     ],
     'sources': [
-      'runtime/common/cameo_content_client_unittest.cc',
+      'runtime/common/xwalk_content_client_unittest.cc',
       'test/base/run_all_unittests.cc',
     ],
     'conditions': [
@@ -70,14 +70,14 @@
         ],
       }],
     ],
-  }, # cameo_unit_tests target
+  }, # xwalk_unit_tests target
 
   {
-    'target_name': 'cameo_browsertest',
+    'target_name': 'xwalk_browsertest',
     'type': 'executable',
     'dependencies': [
       'cameo',
-      'cameo_test_common',
+      'xwalk_test_common',
       '../skia/skia.gyp:skia',
       '../testing/gtest.gyp:gtest',
       '../testing/gmock.gyp:gmock',
@@ -89,14 +89,15 @@
       'HAS_OUT_OF_PROC_TEST_RUNNER',
     ],
     'sources': [
-      'runtime/browser/cameo_form_input_browsertest.cc',
-      'runtime/browser/cameo_runtime_browsertest.cc',
-      'runtime/browser/cameo_switches_browsertest.cc',
-      'runtime/browser/devtools/cameo_devtools_browsertest.cc',
-      'runtime/browser/geolocation/cameo_geolocation_browsertest.cc',
-      'test/base/cameo_test_launcher.cc',
+      'runtime/browser/xwalk_download_browsertest.cc',
+      'runtime/browser/xwalk_form_input_browsertest.cc',
+      'runtime/browser/xwalk_runtime_browsertest.cc',
+      'runtime/browser/xwalk_switches_browsertest.cc',
+      'runtime/browser/devtools/xwalk_devtools_browsertest.cc',
+      'runtime/browser/geolocation/xwalk_geolocation_browsertest.cc',
       'test/base/in_process_browser_test.cc',
       'test/base/in_process_browser_test.h',
+      'test/base/xwalk_test_launcher.cc',
     ],
     'includes': [
       'extensions/extensions_browsertests.gypi',
@@ -113,5 +114,5 @@
         ],
       }],  # OS=="win"
     ],
-  }], # cameo_browser_tests target
+  }], # xwalk_browser_tests target
 }

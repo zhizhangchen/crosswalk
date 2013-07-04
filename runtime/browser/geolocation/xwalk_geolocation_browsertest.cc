@@ -14,8 +14,8 @@
 #include "cameo/runtime/browser/runtime.h"
 #include "cameo/runtime/browser/runtime_registry.h"
 #include "cameo/runtime/common/cameo_notification_types.h"
-#include "cameo/test/base/cameo_test_utils.h"
 #include "cameo/test/base/in_process_browser_test.h"
+#include "cameo/test/base/xwalk_test_utils.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
@@ -50,10 +50,10 @@ class MockRuntimeRegistryObserver : public cameo::RuntimeRegistryObserver {
   DISALLOW_COPY_AND_ASSIGN(MockRuntimeRegistryObserver);
 };
 
-class CameoRuntimeTest : public InProcessBrowserTest {
+class XWalkRuntimeTest : public InProcessBrowserTest {
  public:
-  CameoRuntimeTest() {}
-  virtual ~CameoRuntimeTest() {
+  XWalkRuntimeTest() {}
+  virtual ~XWalkRuntimeTest() {
     original_runtimes_.clear();
     notification_observer_.reset();
   }
@@ -76,12 +76,12 @@ class CameoRuntimeTest : public InProcessBrowserTest {
   scoped_ptr<content::WindowedNotificationObserver> notification_observer_;
 };
 
-IN_PROC_BROWSER_TEST_F(CameoRuntimeTest, LoadGeolocationPage) {
-  GURL url = cameo_test_utils::GetTestURL(
+IN_PROC_BROWSER_TEST_F(XWalkRuntimeTest, LoadGeolocationPage) {
+  GURL url = xwalk_test_utils::GetTestURL(
       base::FilePath(), base::FilePath().AppendASCII(
           "geolocation/simple.html"));
   size_t len = RuntimeRegistry::Get()->runtimes().size();
-  cameo_test_utils::NavigateToURL(runtime(), url);
+  xwalk_test_utils::NavigateToURL(runtime(), url);
   int error_code;
   ASSERT_TRUE(content::ExecuteScriptAndExtractInt(
       runtime()->web_contents(),
