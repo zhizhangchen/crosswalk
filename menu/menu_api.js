@@ -30,7 +30,61 @@ if (cameo === undefined) {
 }
 
 cameo.menu = cameo.menu || {}
+/* Create an API function for a native command.
+ *
+ * The first argument should be the command name, followed by argument
+ * specifications of the API, which are normally argument names of the API,
+ * except for a callback arugument, in which case an array or a customized
+ * function can be used. The array should specifify the argument names of the
+ * callback. The customzied function takes the response message and user
+ * secified callback as its arguments. It can do some job using the reponse
+ * message and then call the user specified callback. All the argument names
+ * should match the message fields sent to or received from the extension.
+ *
+*/
 
+cameo.menu._createCommand = (function() {
+  cameo.menu._callbacks = {};
+  cameo.menu._next_reply_id = 0;
+  cameo.setMessageListener('cameo.menu', function(msg) {
+    if (cameo.menu.onActivatedMenuItem instanceof Function)
+      cameo.menu.onActivatedMenuItem(msg);
+  });
+  return function() {
+    var apiSpec = arguments;
+    var cmdNameType =  typeof apiSpec[0];
+    var callbackCount = 0;
+    if (cmdNameType !== "string") {
+      console.error('Command name should be string, but is ' + cmdNameType);
+      return function () {};
+    }
+    for (var j = 1; j < apiSpec.length; j ++) {
+      var argNameType =  typeof apiSpec[j];
+      if (argNameType !== "string" &&
+          !(apiSpec[j] instanceof Array) && argNameType !== "function") {
+        console.error('The ' + j + ' argument name of ' + apiSpec[0]
+            + ' should be string, array or function, but is ' + argNameType);
+        return function () {};
+      }
+      if (apiSpec[j] instanceof Array || argNameType === "function")
+        callbackCount ++;
+
+    }
+    if (callbackCount > 1) {
+        console.error("Too many callback specs for command " + apiSpec[0]);
+        return function () {};
+    }
+    return function () {
+      var msg = { cmd: apiSpec[0] };
+      var i;
+      for (i = 0; i < arguments.length; i ++) {
+        var arg = arguments[i];
+        msg[apiSpec[i + 1]] = arg;
+      }
+      cameo.menu._postMessage(msg);
+    }
+  };
+})();
 // We accumulate the messages and posting them only in the next run of the
 // mainloop.
 cameo.menu._postMessage = (function() {
@@ -54,78 +108,10 @@ cameo.menu._postMessage = (function() {
   };
 })();
 
-cameo.setMessageListener('cameo.menu', function(msg) {
-  if (cameo.menu.onActivatedMenuItem instanceof Function)
-    cameo.menu.onActivatedMenuItem(msg);
-});
-
-cameo.menu.setMenuItemState = function(commandid, enabled, checked) {
-  var msg = {
-    'cmd': 'SetMenuItemState',
-    'id': commandid,
-    'enabled': enabled,
-    'checked': checked
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.addMenu = function(title, id, position, relativeId) {
-  var msg = {
-    'cmd': 'AddMenu',
-    'id': id,
-    'title': title,
-    'position': position,
-    'relative_id': relativeId,
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.addMenuItem = function(parentId, title, id, key, displayStr,
-				  position, relativeId) {
-  var msg = {
-    'cmd': 'AddMenuItem',
-    'id': id,
-    'title': title,
-    'key': key,
-    'display_str': displayStr,
-    'parent_id': parentId,
-    'position': position,
-    'relative_id': relativeId,
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.setMenuTitle = function (commandid, title) {
-  var msg = {
-    'cmd': 'SetMenuTitle',
-    'id': commandid,
-    'title': title,
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.setMenuItemShortcut = function(commandId, shortcut, displayStr) {
-  var msg = {
-    'cmd': 'SetMenuItemShortcut',
-    'id': commandId,
-    'shortcut': shortcut,
-    'display_str': displayStr,
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.removeMenu = function(commandId) {
-  var msg = {
-    'cmd': 'RemoveMenu',
-    'id': id,
-  };
-  cameo.menu._postMessage(msg);
-}
-
-cameo.menu.removeMenuItem = function(commandId) {
-  var msg = {
-    'cmd': 'RemoveMenuItem',
-    'id': id,
-  };
-  cameo.menu._postMessage(msg);
-}
+cameo.menu.setMenuItemState = cameo.menu._createCommand("SetMenuItemState", "id", "enabled", "checked");
+cameo.menu.addMenu = cameo.menu._createCommand("AddMenu", "title", "id", "position", "relativeId");
+cameo.menu.addMenuItem = cameo.menu._createCommand("AddMenuItem", "parent_id", "title", "id", "key", "display_str", "position", "relative_id");
+cameo.menu.setMenuTitle = cameo.menu._createCommand("SetMenuTitle", "id", "title");
+cameo.menu.setMenuItemShortcut = cameo.menu._createCommand("SetMenuItemShortcut", "id", "shortcut", "display_str");
+cameo.menu.removeMenu = cameo.menu._createCommand("RemoveMenu", "id");
+cameo.menu.removeMenuItem = cameo.menu._createCommand("RemoveMenuItem", "id");
