@@ -54,7 +54,6 @@
         '..',
       ],
       'includes': [
-        'brackets/brackets.gypi',
         'extensions/extensions.gypi',
         'menu/menu.gypi',
       ],

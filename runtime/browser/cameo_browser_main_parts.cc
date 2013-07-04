@@ -11,7 +11,6 @@
 #include "base/file_util.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_number_conversions.h"
-#include "cameo/brackets/brackets_extension.h"
 #include "cameo/extensions/browser/cameo_extension_external.h"
 #include "cameo/extensions/browser/cameo_extension_service.h"
 #include "cameo/menu/menu_extension.h"
@@ -145,7 +144,6 @@ void CameoBrowserMainParts::PostMainMessageLoopRun() {
 void CameoBrowserMainParts::RegisterExtensions() {
   extension_service_->RegisterExtension(
       new MenuExtension(runtime_registry_.get()));
-  extension_service_->RegisterExtension(new brackets::BracketsExtension);
 }
 
 }  // namespace cameo
