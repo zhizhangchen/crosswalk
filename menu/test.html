@@ -1,19 +1,18 @@
+<!--
+<script src="menu_api.js"></script>
+-->
 <script type="application/javascript">
 
-var Toplevel = cameo.menu.Toplevel,
-    Item = cameo.menu.Item,
-    Separator = cameo.menu.Separator;
+cameo.menu.addMenu('File', 'file-menu');
+cameo.menu.addMenuItem('file-menu', 'New', 'new');
+cameo.menu.addMenuItem('file-menu', 'Open', 'open');
+cameo.menu.addMenuItem('file-menu', 'Save', 'save');
+cameo.menu.addMenuItem('file-menu', 'Save As...', 'save-as');
+cameo.menu.addMenuItem('file-menu', '----', 'separator');
+cameo.menu.addMenuItem('file-menu', 'Quit', 'quit');
 
-var file = Toplevel('file-menu', 'File');
-file.AddItem(Item('new', 'New'));
-file.AddItem(Item('open', 'Open'));
-file.AddItem(Item('save', 'Save'));
-file.AddItem(Item('save-as', 'Save As...'));
-file.AddItem(Separator());
-file.AddItem(Item('quit', 'Quit'));
-
-var help = Toplevel('help-menu', 'Help');
-help.AddItem(Item('about', 'About'));
+cameo.menu.addMenu('Help', 'help-menu');
+cameo.menu.addMenuItem('help-menu', 'About', 'about');
 
 document.write('created file and help menus<br>');
 
