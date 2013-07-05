@@ -37,11 +37,20 @@ brackets.fs.ERR_FILE_EXISTS = 10;
 
 brackets.debugging_port = 0;
 
+cameo.addEventListener = (function() {
+  cameo._event_listeners = {};
+  return function (extension, type,  callback) {
+    cameo._event_listeners[extension] = cameo._event_listeners[extension] || {};
+    cameo._event_listeners[extension][type] = cameo._event_listeners[extension][type] || [];
+    cameo._event_listeners[extension][type].push(callback);
+  }
+})();
+
 /* Create an API function for a native command.
  *
  * The first argument should be the command name, followed by argument
  * specifications of the API, which are normally argument names of the API,
- * except for a callback arugument, in which case an array or a customized
+ * except for a callback argument, in which case an array or a customized
  * function can be used. The array should specifify the argument names of the
  * callback. The customzied function takes the response message and user
  * secified callback as its arguments. It can do some job using the reponse
@@ -50,80 +59,113 @@ brackets.debugging_port = 0;
  *
 */
 
-brackets._createCommand = (function() {
-  brackets._callbacks = {};
-  brackets._next_reply_id = 0;
-  cameo.setMessageListener('brackets', function(json) {
-    var msg = JSON.parse(json);
-    var reply_id = msg._reply_id;
-    var callback = brackets._callbacks[reply_id];
-    //console.log('Received message:' + json);
-    if (callback) {
-      delete msg._reply_id;
-      delete brackets._callbacks[reply_id];
-      callback(msg);
-    } else {
-      console.log('Invalid reply_id received from Brackets extension: ' + reply_id);
+cameo.createCommand = (function() {
+  var queue = {};
+  cameo._callbacks = {};
+  cameo._next_reply_id = 0;
+  function poster() {
+    // FIXME(cmarcelo): Change extension to accept a list of messages.
+    for (extension in queue) {
+      var extensionQueue = queue[extension];
+      for (i = 0; i < extensionQueue.length; i++) {
+        cameo.postMessage(extension, JSON.stringify(extensionQueue[i]));
+        if (cameo._event_listeners[extension])
+          cameo._event_listeners[extension]['commandExecuted'].forEach(function (listener) {
+            listener(extensionQueue[i]);
+        });
+      }
+      extensionQueue.length = 0;
     }
-  });
+  }
   return function() {
     var apiSpec = arguments;
-    var cmdNameType =  typeof apiSpec[0];
+    var extension = apiSpec[0];
+    var cmd = apiSpec[1];
+    var cmdNameType = typeof cmd;
     var callbackCount = 0;
     if (cmdNameType !== "string") {
       console.error('Command name should be string, but is ' + cmdNameType);
       return function () {};
     }
-    for (var j = 1; j < apiSpec.length; j ++) {
-      var argNameType =  typeof apiSpec[j];
+    for (var j = 2; j < apiSpec.length; j++) {
+      var argNameType = typeof apiSpec[j];
       if (argNameType !== "string" &&
           !(apiSpec[j] instanceof Array) && argNameType !== "function") {
-        console.error('The ' + j + ' argument name of ' + apiSpec[0]
+        console.error('The ' + j + ' argument name of ' + cmd
             + ' should be string, array or function, but is ' + argNameType);
         return function () {};
       }
       if (apiSpec[j] instanceof Array || argNameType === "function")
-        callbackCount ++;
+        callbackCount++;
 
     }
     if (callbackCount > 1) {
-        console.error("Too many callback specs for command " + apiSpec[0]);
+        console.error("Too many callback specs for command " + cmd);
         return function () {};
     }
+    cameo.setMessageListener(extension, function(json) {
+      var msg;
+      try {
+        msg = JSON.parse(json);
+      }catch (e) {
+        msg = json;
+      }
+      var reply_id = msg._reply_id;
+      var callback = cameo._callbacks[reply_id];
+      if (callback) {
+        delete msg._reply_id;
+        delete cameo._callbacks[reply_id];
+        callback(msg);
+      } else if (!reply_id){
+        cameo._event_listeners[extension][msg.type || 'default'].forEach(function (listener) {
+          listener(msg);
+        });
+      }
+      else
+        console.log('Invalid reply_id received from Brackets extension: ' + reply_id);
+    });
     return function () {
       var callback;
       var cbFields=[];
-      var msg = { cmd: apiSpec[0] };
+      var msg = { cmd: cmd };
       var i;
-      for (i = 0; i < arguments.length; i ++) {
+      for (i = 0; i < arguments.length; i++) {
         var arg = arguments[i];
         if (typeof arg === 'function') {
           callback = arg;
-          cbFields = apiSpec[i + 1];
+          cbFields = apiSpec[i + 2];
         }
         else {
-          msg[apiSpec[i + 1]] = arg;
+          msg[apiSpec[i + 2]] = arg;
         }
       }
-      var reply_id = brackets._next_reply_id;
-      brackets._next_reply_id += 1;
-      brackets._callbacks[reply_id] = function(r) {
-        var cbArgs = [];
-        if  (typeof cbFields === 'function')
-          cbFields.call(null, r, callback);
-        else {
-          for (i = 0; i < cbFields.length; i ++) {
-            cbArgs.push(r[cbFields[i]]);
+      if (callbackCount === 1) {
+        var reply_id = cameo._next_reply_id;
+        cameo._next_reply_id += 1;
+        cameo._callbacks[reply_id] = function(r) {
+          var cbArgs = [];
+          if  (typeof cbFields === 'function')
+            cbFields.call(null, r, callback);
+          else {
+            for (i = 0; i < cbFields.length; i++) {
+              cbArgs.push(r[cbFields[i]]);
+            }
+            callback.apply(null, cbArgs);
           }
-          callback.apply(null, cbArgs);
-        }
-      };
-      msg._reply_id = reply_id.toString();
-      //console.log('Sending message:'+ JSON.stringify(msg));
-      cameo.postMessage('brackets', JSON.stringify(msg));
+        };
+        msg._reply_id = reply_id.toString();
+      }
+      queue[extension] = queue[extension] || [];
+      queue[extension].push(msg);
+      setTimeout(poster, 0);
     }
   };
 })();
+
+brackets._createCommand = function() {
+  [].unshift.call(arguments, "brackets");
+  return cameo.createCommand.apply(null, arguments);
+};
 
 // PROPERTIES
 Object.defineProperty(brackets.app, "language", {
