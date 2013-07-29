@@ -1,0 +1,56 @@
+Crosswalk Node Extension
+----------------------------
+
+This directory contains code to build an extension to allow sub
+extensions being written using nodeJS[1].
+
+With this extension enabled, crosswalk APIs can be extended using
+pure JavaScript dynamically.
+
+A brackets extension is also included in node_extensions/brackets
+as a reference.
+
+[1]: http://nodejs.org
+
+How to Build
+------------
+
+Requirements:
+ - nodeJS
+ - util-linux (for hexdump(1))
+ - make
+ - sed
+ - a working C++ compiler/linker setup
+
+Just run `make`. A `node.so` file should be created.
+
+How to Use
+----------
+
+1. Follow the Crosswalk setup instructions;
+2. Clone node repo to the CURRENT directory from
+   git://github.com/joyent/node.git and change the target type from executable
+   to shared_library in node.gyp:
+
+diff --git a/node.gyp b/node.gyp
+index b948e1c..2100e43 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -70,7 +70,7 @@
+   'targets': [
+     {
+       'target_name': 'node',
+-      'type': 'executable',
++      'type': 'shared_library',
+ 
+       'dependencies': [
+         'node_js2c#host',
+
+3. ./configure && make and copy out/Release/lib.target/libnode.so to where
+   run-node.sh located in.
+
+4. Run the `run-node.sh` script, passing the path to the Crosswalk executable
+   and the HTML file you need to load.
+
+        $ ./run-node.sh ~/chrome/out/Release/xwalk ~/brackets/src/index.html
+
