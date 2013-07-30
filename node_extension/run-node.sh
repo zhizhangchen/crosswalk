@@ -16,7 +16,7 @@ if [ ! -x "$CURRENT_DIRECTORY/node.so" ]; then
     echo "Node extension not found, trying to build."
     if ! make; then
         echo "Couldn't build extension, please file a bug report at"
-        echo "  https://github.com/otcshare/crosswalk"
+        echo "  https://github.com/zhizhangchen/crosswalk"
         exit 1
     fi
 fi

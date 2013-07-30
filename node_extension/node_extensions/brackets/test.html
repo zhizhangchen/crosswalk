@@ -1,0 +1,71 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <script>
+      function assert(result, message) {
+        console.assert(result, message);
+      }
+      function test() {
+        var origFileName = "brackets-extension-test";
+        var origFile = "/tmp/" + origFileName;
+        var testFileName = origFileName + ".txt";
+        var testFile = "/tmp/" + testFileName;
+        brackets.fs.writeFile(origFile, "hello", "utf8",function (error){
+          console.assert(error === 0, "writeFile");
+          brackets.fs.readFile(origFile, "utf8",  function (err, content) {
+            console.assert(content === "hello", "Check " + origFile + " content");
+          });
+          brackets.fs.rename(origFile, testFile ,function (error) {
+            console.assert(error === 0, "rename");
+            brackets.fs.stat(testFile, function (err, stat) {
+              console.assert(stat.isFile(), "Check isFile");
+              console.assert(!stat.isDirectory(), "Check isDirectory");
+              console.assert(stat.mtime, "Check mtime");
+              brackets.fs.readFile(testFile, "utf8",  function (err, content) {
+                console.assert(content === "hello", "Check " + testFile + " content");
+                brackets.fs.readdir("/tmp", function (err, files) {
+                  console.assert(files.indexOf(testFileName) !== -1, "check readdir");
+                  brackets.fs.moveToTrash(testFile, function (error) {
+                    console.assert(error === 0, "moveToTrash");
+                  })
+                })
+              });
+            });
+          })
+        })
+        brackets.app.openLiveBrowser("http://google.com", true, function (error) {
+          console.assert(error === 0, "openLiveBrowser");
+        });
+        brackets.app.openURLInDefaultBrowser(function (error) {
+          console.assert(error === 0, "openURLInDefaultBrowser");
+        }, "http://baidu.com");
+        console.assert(brackets.app.getApplicationSupportDirectory() === "/tmp/brackets-support", "getApplicationSupportDirectory");
+        brackets.app.getNodeState(function(enabled, error) {
+          console.assert(enabled, "getNodeState");
+          console.assert(error === 0, "getNodeState");
+        });
+        brackets.fs.makedir("/tmp/testdir", 0, function(error) {
+          console.assert(error === 0, "makedir");
+          brackets.fs.unlink("/tmp/testdir", function(error) {
+            console.assert(error === 0, "unlink");
+          });
+        });
+        brackets.fs.isNetworkDrive("/tmp", function (error) {
+          console.assert(error === 0, "isNetworkDrive");
+        })
+        brackets.app.showOSFolder("/tmp", function (error) {
+          console.assert(error === 0, "showOSFolder");
+        })
+        brackets.app.getPendingFilesToOpen( function (error, files) {
+          console.assert(error === 0, "getPendingFilesToOpen");
+          console.assert(files.length === 0, "getPendingFilesToOpen");
+        })
+        console.assert(brackets.app.getRemoteDebuggingPort() === 31000, "debugging_port");
+      }
+    </script>
+    <a href="javascript:test()"> Test <a> <br/>
+    <a href="javascript:location.reload()"> Refresh <a> <br/>
+    <a href="http://baidu.com"> baidu <a>
+  </body>
+</html>
