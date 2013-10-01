@@ -18,10 +18,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-window.brackets = window.brackets || {};
-var old_exports = exports;
-exports = window.brackets;
-
 exports.app = {
   NO_ERROR: 0,
 };
@@ -39,25 +35,12 @@ exports.fs = {
   ERR_FILE_EXISTS: 10,
 };
 
-var postMessage = function(msg, callback) {
-  node.postMessage(msg, callback);
-}
-
 // PROPERTIES
 Object.defineProperty(exports.app, "language", {
   writeable: false,
   get : function() { return (navigator.language).toLowerCase(); },
   enumerable : true,
   configurable : false
-});
-
-// SETUP MESSAGES
-var debugging_port = 0;
-var msg = {
-  'cmd': 'GetRemoteDebuggingPort'
-};
-postMessage(msg, function(r) {
-  debugging_port = r.debugging_port;
 });
 
 // API
@@ -198,10 +181,12 @@ exports.fs.isNetworkDrive = function(path, callback) {
   });
 };
 
-xwalk.menu = xwalk.menu || {};
-xwalk.menu.onActivatedMenuItem = function(item) {
-    brackets.shellAPI.executeCommand(item);
-};
+directInit(function() {
+  xwalk.menu = xwalk.menu || {};
+  xwalk.menu.onActivatedMenuItem = function(item) {
+      brackets.shellAPI.executeCommand(item);
+  };
+});
 
 exports.app.addMenu = function(title, id, position, relativeId, callback) {
   xwalk.menu.addMenu(title, id, position, relativeId);
@@ -252,18 +237,15 @@ exports.app.getPendingFilesToOpen = function(callback) {
 };
 
 exports.app.getRemoteDebuggingPort = function() {
-  return debugging_port;
+  return 31000;
 };
 
-xwalk.experimental = xwalk.experimental || {};
-xwalk.experimental.dialog = xwalk.experimental.dialog || {};
-exports.fs.showOpenDialog = function (allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes, callback) {
+exports.fs.showOpenDialog = direct(function (allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes, callback) {
   xwalk.experimental.dialog.showOpenDialog(allowMultipleSelection, chooseDirectory,
      title || 'Open', initialPath || '',
      fileTypes ? fileTypes.join(' ') : '', function(err, file) { callback(err, [file]); });
-}
+})
 
-exports.fs.showSaveDialog = function (title, initialPath, proposedNewFilename, callback) {
+exports.fs.showSaveDialog = direct(function (title, initialPath, proposedNewFilename, callback) {
   xwalk.experimental.dialog.showSaveDialog(title || 'Save As', initialPath || '', proposedNewFilename || '', callback);
-}
-exports = old_exports;
+});
