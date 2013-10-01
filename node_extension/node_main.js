@@ -1,6 +1,17 @@
 process.handleMessage = function (msg) {
   var ret;
   var msgObj = JSON.parse(msg, function(key, value){
+    if (value.indexOf("__function__") === 0) {
+      var _reply_id = value.split(":")[1];
+      return function () {
+        var resp = { arguments: arguments};
+        if (_reply_id)
+          resp._reply_id = _reply_id;
+        else
+          resp.eventType = key;
+        return process.sendMessage(resp);
+      }
+    }
   });
   var apiStack = msgObj.apiStack;
   var module = require("./node_extensions/" + apiStack[0] +  ".js");
